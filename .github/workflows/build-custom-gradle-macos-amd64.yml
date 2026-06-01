@@ -11,10 +11,16 @@ on:
         description: Gradle version qualifier, producing 9.1.0-<qualifier>-<timestamp>
         required: true
         default: custom
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/build-custom-gradle-macos-amd64.yml
 
 jobs:
   build:
     name: Build custom Gradle distribution
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15-intel
     timeout-minutes: 180
 
