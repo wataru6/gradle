@@ -1,0 +1,34 @@
+def nativePlatformRepoPath = System.getenv("NATIVE_PLATFORM_REPO")
+
+if (nativePlatformRepoPath == null || nativePlatformRepoPath.trim().isEmpty()) {
+    throw new GradleException("NATIVE_PLATFORM_REPO must point to the local Maven repository with custom native-platform artifacts.")
+}
+
+def nativePlatformRepoDir = new File(nativePlatformRepoPath)
+
+if (!nativePlatformRepoDir.isDirectory()) {
+    throw new GradleException("NATIVE_PLATFORM_REPO does not exist or is not a directory: ${nativePlatformRepoDir}")
+}
+
+def configureNativePlatformRepository = { repositories ->
+    repositories.exclusiveContent {
+        forRepository {
+            maven {
+                name = "Custom native-platform"
+                url = nativePlatformRepoDir.toURI()
+                metadataSources {
+                    mavenPom()
+                    artifact()
+                }
+            }
+        }
+        filter {
+            includeGroup("net.rubygrapefruit")
+        }
+    }
+}
+
+gradle.beforeProject { project ->
+    configureNativePlatformRepository(project.buildscript.repositories)
+    configureNativePlatformRepository(project.repositories)
+}
