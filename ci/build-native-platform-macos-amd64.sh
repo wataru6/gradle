@@ -21,22 +21,17 @@ if [[ ! -d "$NATIVE_PLATFORM_DIR" ]]; then
   exit 1
 fi
 
-version_args=()
-if [[ "$NATIVE_PLATFORM_VERSION" =~ ^([0-9]+(\.[0-9]+)+)-milestone-([0-9]+)$ ]]; then
-  version_args+=("-Pmilestone")
-  version_args+=("-PnextVersion=${BASH_REMATCH[1]}")
-  version_args+=("-PnextMilestone=${BASH_REMATCH[3]}")
-elif [[ "$NATIVE_PLATFORM_VERSION" =~ ^([0-9]+(\.[0-9]+)+)-dev$ ]]; then
-  version_args+=("-PnextVersion=${BASH_REMATCH[1]}")
-elif [[ "$NATIVE_PLATFORM_VERSION" =~ ^([0-9]+(\.[0-9]+)+)-(.+)$ ]]; then
-  version_args+=("-Palpha=${BASH_REMATCH[3]}")
-  version_args+=("-PnextVersion=${BASH_REMATCH[1]}")
+if [[ "$NATIVE_PLATFORM_VERSION" =~ ^([0-9]+(\.[0-9]+)+) ]]; then
+  NATIVE_PLATFORM_BASE_VERSION="${BASH_REMATCH[1]}"
 else
-  version_args+=("-Prelease")
-  version_args+=("-PnextVersion=$NATIVE_PLATFORM_VERSION")
+  echo "NATIVE_PLATFORM_VERSION must start with a numeric base version, for example 0.22-dev or 0.22-milestone-28-custom." >&2
+  exit 1
 fi
 
-echo "Building native-platform $NATIVE_PLATFORM_VERSION for osx-amd64"
+NATIVE_PLATFORM_BUILD_VERSION="${NATIVE_PLATFORM_BASE_VERSION}-dev"
+
+echo "Building native-platform $NATIVE_PLATFORM_BUILD_VERSION for osx-amd64"
+echo "Publishing local Maven coordinates as $NATIVE_PLATFORM_VERSION"
 echo "Using JAVA_HOME=${JAVA_HOME:-not set}"
 java -version
 xcode-select -p
@@ -51,7 +46,40 @@ cd "$NATIVE_PLATFORM_DIR"
   :native-platform:build \
   :native-platform:publishAllPublicationsToLocalFileRepository \
   -PonlyLocalVariants \
-  "${version_args[@]}"
+  "-PnextVersion=$NATIVE_PLATFORM_BASE_VERSION"
+
+copy_artifact_version() {
+  local artifact_id="$1"
+  local source_dir="$NATIVE_PLATFORM_REPO/net/rubygrapefruit/$artifact_id/$NATIVE_PLATFORM_BUILD_VERSION"
+  local target_dir="$NATIVE_PLATFORM_REPO/net/rubygrapefruit/$artifact_id/$NATIVE_PLATFORM_VERSION"
+
+  if [[ "$NATIVE_PLATFORM_VERSION" == "$NATIVE_PLATFORM_BUILD_VERSION" ]]; then
+    return
+  fi
+
+  if [[ ! -d "$source_dir" ]]; then
+    echo "Expected published artifact directory does not exist: $source_dir" >&2
+    exit 1
+  fi
+
+  rm -rf "$target_dir"
+  mkdir -p "$target_dir"
+
+  for source_file in "$source_dir"/"$artifact_id-$NATIVE_PLATFORM_BUILD_VERSION"*; do
+    local file_name
+    file_name="$(basename "$source_file")"
+    local target_file="$target_dir/${file_name/$NATIVE_PLATFORM_BUILD_VERSION/$NATIVE_PLATFORM_VERSION}"
+    cp "$source_file" "$target_file"
+    if [[ "$target_file" == *.pom || "$target_file" == *.module ]]; then
+      NATIVE_PLATFORM_BUILD_VERSION="$NATIVE_PLATFORM_BUILD_VERSION" \
+        NATIVE_PLATFORM_VERSION="$NATIVE_PLATFORM_VERSION" \
+        perl -0pi -e 's/\Q$ENV{NATIVE_PLATFORM_BUILD_VERSION}\E/$ENV{NATIVE_PLATFORM_VERSION}/g' "$target_file"
+    fi
+  done
+}
+
+copy_artifact_version native-platform
+copy_artifact_version native-platform-osx-amd64
 
 required_artifacts=(
   "$NATIVE_PLATFORM_REPO/net/rubygrapefruit/native-platform/$NATIVE_PLATFORM_VERSION/native-platform-$NATIVE_PLATFORM_VERSION.jar"
