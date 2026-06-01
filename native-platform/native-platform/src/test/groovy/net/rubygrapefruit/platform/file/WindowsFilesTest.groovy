@@ -5,7 +5,7 @@ import spock.lang.IgnoreIf
 
 @IgnoreIf({ !Platform.current().windows })
 class WindowsFilesTest extends FilesTest {
-    final WindowsFiles windowsFiles = getIntegration(WindowsFiles)
+    final WindowsFiles files = getIntegration(WindowsFiles)
 
     @Override
     void assertIsFile(FileInfo stat, File file) {
@@ -27,17 +27,16 @@ class WindowsFilesTest extends FilesTest {
 
     def "uses same instance for specialized file types"() {
         expect:
-        getIntegration(WindowsFiles) == windowsFiles
-        getIntegration(Files) == windowsFiles
+        getIntegration(WindowsFiles) == files
+        getIntegration(Files) == files
     }
 
     def "can stat file using UNC path"() {
-        def file = new File(tmpDir, "somefile.txt")
-        file.createNewFile()
+        def file = tmpDir.newFile()
         def testFile = new File('\\\\localhost\\' + file.absolutePath.charAt(0) + '$\\' + file.absolutePath.substring(2))
 
         when:
-        def stat = windowsFiles.stat(testFile)
+        def stat = files.stat(testFile)
 
         then:
         stat.type == FileInfo.Type.File

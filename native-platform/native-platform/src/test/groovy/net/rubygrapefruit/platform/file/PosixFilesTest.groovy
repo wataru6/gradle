@@ -16,7 +16,7 @@ import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE
 
 @IgnoreIf({ Platform.current().windows })
 class PosixFilesTest extends FilesTest {
-    final PosixFiles posixFiles = getIntegration(PosixFiles)
+    final PosixFiles files = getIntegration(PosixFiles)
 
     @Override
     void assertIsFile(FileInfo stat, File file) {
@@ -59,17 +59,16 @@ class PosixFilesTest extends FilesTest {
 
     def "uses same instance for specialized file types"() {
         expect:
-        getIntegration(PosixFiles) == posixFiles
-        getIntegration(Files) == posixFiles
+        getIntegration(PosixFiles) == files
+        getIntegration(Files) == files
     }
 
     def "can stat a file with no read permissions"() {
-        def testFile = new File(tmpDir, "test.file")
-        testFile.createNewFile()
+        def testFile = tmpDir.newFile("test.file")
         chmod(testFile, [OWNER_WRITE])
 
         when:
-        def stat = posixFiles.stat(testFile)
+        def stat = files.stat(testFile)
 
         then:
         stat.type == FileInfo.Type.File
@@ -79,13 +78,12 @@ class PosixFilesTest extends FilesTest {
     }
 
     def "cannot stat a file with no execute permission on parent"() {
-        def testDir = new File(tmpDir, "test-dir")
-        testDir.mkdirs()
+        def testDir = tmpDir.newFolder("test-dir")
         def testFile = new File(testDir, "test.file")
         chmod(testDir, permissions)
 
         when:
-        posixFiles.stat(testFile)
+        files.stat(testFile)
 
         then:
         def e = thrown(FilePermissionException)
@@ -102,21 +100,20 @@ class PosixFilesTest extends FilesTest {
     }
 
     def "can stat a symlink with no read permissions on symlink"() {
-        def testDir = new File(tmpDir, "test-dir")
-        testDir.mkdirs()
+        def testDir = tmpDir.newFolder("test-dir")
         new File(testDir, "test.file").createNewFile()
         def linkFile = new File(testDir, "link")
-        posixFiles.symlink(linkFile, "test.file")
+        files.symlink(linkFile, "test.file")
         chmod(linkFile, [])
 
         when:
-        def stat = posixFiles.stat(linkFile, true)
+        def stat = files.stat(linkFile, true)
 
         then:
         stat.type == FileInfo.Type.File
 
         when:
-        stat = posixFiles.stat(linkFile, false)
+        stat = files.stat(linkFile, false)
 
         then:
         stat.type == FileInfo.Type.Symlink
@@ -126,8 +123,7 @@ class PosixFilesTest extends FilesTest {
     }
 
     def "cannot stat a symlink with no read permissions on parent of target"() {
-        def dir = new File(tmpDir, "first-test-dir")
-        dir.mkdirs()
+        def dir = tmpDir.newFolder()
         def testDir = new File(dir, "test-dir")
         testDir.mkdirs()
         def testFile = new File(testDir, "test.file")
@@ -136,10 +132,10 @@ class PosixFilesTest extends FilesTest {
 
         def linkFile = new File(dir, "link")
         linkFile.delete()
-        posixFiles.symlink(linkFile, "test-dir/test.file")
+        files.symlink(linkFile, "test-dir/test.file")
 
         when:
-        posixFiles.stat(linkFile, true)
+        files.stat(linkFile, true)
 
         then:
         def e = thrown(FilePermissionException)
@@ -151,20 +147,17 @@ class PosixFilesTest extends FilesTest {
 
     @Unroll
     def "stat follows symlinks to parent directory"() {
-        def parentDir = new File(tmpDir, "first-test-dir")
-        parentDir.mkdirs()
+        def parentDir = tmpDir.newFolder()
         def testFile = new File(parentDir, fileName)
         testFile.parentFile.mkdirs()
         testFile.text = "content"
-        def dir = new File(tmpDir, "first-test-dir")
-        dir.mkdirs()
-        def link = new File(dir, "link")
+        def link = new File(tmpDir.newFolder(), "link")
 
         given:
-        posixFiles.symlink(link, parentDir.absolutePath)
+        files.symlink(link, parentDir.absolutePath)
 
         when:
-        def stat = posixFiles.stat(new File(link, fileName))
+        def stat = files.stat(new File(link, fileName))
 
         then:
         assertIsFile(stat, testFile)
@@ -174,32 +167,29 @@ class PosixFilesTest extends FilesTest {
     }
 
     def "directory listing follows symlinks to dir"() {
-        def dir = new File(tmpDir, "first-test-dir")
-        dir.mkdirs()
+        def dir = tmpDir.newFolder()
         new File(dir, "a").text = 'content'
         new File(dir, "b").text = 'content'
-        def testDir = new File(tmpDir, "second-test-dir")
-        testDir.mkdirs()
+        def testDir = tmpDir.newFolder()
         def link1 = new File(testDir, "some-dir")
         def link2 = new File(testDir, "link2")
-        posixFiles.symlink(link1, "link2")
-        posixFiles.symlink(link2, dir.absolutePath)
+        files.symlink(link1, "link2")
+        files.symlink(link2, dir.absolutePath)
 
         expect:
-        def list = posixFiles.listDir(link1)
+        def list = files.listDir(link1)
         list.size() == 2
         list*.name.sort() == ["a", "b"]
     }
 
     def "cannot list directory without read and execute permissions"() {
-        def dir = new File(tmpDir, "first-test-dir")
-        dir.mkdirs()
+        def dir = tmpDir.newFolder()
         new File(dir, "a").text = 'content'
         new File(dir, "b").text = 'content'
         chmod(dir, permissions)
 
         when:
-        posixFiles.listDir(dir)
+        files.listDir(dir)
 
         then:
         def e = thrown(FilePermissionException)
@@ -218,16 +208,15 @@ class PosixFilesTest extends FilesTest {
 
     @Unroll
     def "can set mode on a file"() {
-        def testFile = new File(tmpDir, fileName)
-        testFile.createNewFile()
+        def testFile = tmpDir.newFile(fileName)
 
         when:
-        posixFiles.setMode(testFile, fileMode)
+        files.setMode(testFile, fileMode)
 
         then:
         mode(attributes(testFile)) == fileMode
-        posixFiles.getMode(testFile) == fileMode
-        posixFiles.stat(testFile).mode == fileMode
+        files.getMode(testFile) == fileMode
+        files.stat(testFile).mode == fileMode
 
         where:
         fileName << maybeWithUnicde(["test.txt", "test\u03b1\u2295.txt", "test2.txt"])
@@ -236,16 +225,15 @@ class PosixFilesTest extends FilesTest {
 
     @Unroll
     def "can set mode on a directory"() {
-        def testFile = new File(tmpDir, fileName)
-        testFile.mkdirs()
+        def testFile = tmpDir.newFolder(fileName)
 
         when:
-        posixFiles.setMode(testFile, fileMode)
+        files.setMode(testFile, fileMode)
 
         then:
         mode(attributes(testFile)) == fileMode
-        posixFiles.getMode(testFile) == fileMode
-        posixFiles.stat(testFile).mode == fileMode
+        files.getMode(testFile) == fileMode
+        files.stat(testFile).mode == fileMode
 
         where:
         fileName << maybeWithUnicde(["test-dir", "test\u03b1\u2295-dir", "test2.txt"])
@@ -253,10 +241,10 @@ class PosixFilesTest extends FilesTest {
     }
 
     def "cannot set mode on file that does not exist"() {
-        def testFile = new File(tmpDir, "unknown")
+        def testFile = new File(tmpDir.root, "unknown")
 
         when:
-        posixFiles.setMode(testFile, 0660)
+        files.setMode(testFile, 0660)
 
         then:
         NativeException e = thrown()
@@ -264,10 +252,10 @@ class PosixFilesTest extends FilesTest {
     }
 
     def "cannot get mode on file that does not exist"() {
-        def testFile = new File(tmpDir, "unknown")
+        def testFile = new File(tmpDir.root, "unknown")
 
         when:
-        posixFiles.getMode(testFile)
+        files.getMode(testFile)
 
         then:
         NativeException e = thrown()
@@ -276,13 +264,13 @@ class PosixFilesTest extends FilesTest {
 
     @Unroll
     def "can create symbolic link"() {
-        def testFile = new File(tmpDir, name)
+        def testFile = new File(tmpDir.root, name)
         testFile.parentFile.mkdirs()
         testFile.text = "hi"
-        def symlinkFile = new File(tmpDir, name + ".link")
+        def symlinkFile = new File(tmpDir.root, name + ".link")
 
         when:
-        posixFiles.symlink(symlinkFile, testFile.name)
+        files.symlink(symlinkFile, testFile.name)
 
         then:
         symlinkFile.file
@@ -295,24 +283,24 @@ class PosixFilesTest extends FilesTest {
 
     @Unroll
     def "can read symbolic link"() {
-        def symlinkFile = new File(tmpDir, name)
+        def symlinkFile = new File(tmpDir.root, name)
         symlinkFile.parentFile.mkdirs()
 
         when:
-        posixFiles.symlink(symlinkFile, name)
+        files.symlink(symlinkFile, name)
 
         then:
-        posixFiles.readLink(symlinkFile) == name
+        files.readLink(symlinkFile) == name
 
         where:
         name << names
     }
 
     def "cannot read a symlink that does not exist"() {
-        def symlinkFile = new File(tmpDir, "symlink")
+        def symlinkFile = new File(tmpDir.root, "symlink")
 
         when:
-        posixFiles.readLink(symlinkFile)
+        files.readLink(symlinkFile)
 
         then:
         NativeException e = thrown()
@@ -320,11 +308,10 @@ class PosixFilesTest extends FilesTest {
     }
 
     def "cannot read a symlink that is not a symlink"() {
-        def symlinkFile = new File(tmpDir, "not-a-symlink.txt")
-        symlinkFile.createNewFile()
+        def symlinkFile = tmpDir.newFile("not-a-symlink.txt")
 
         when:
-        posixFiles.readLink(symlinkFile)
+        files.readLink(symlinkFile)
 
         then:
         NativeException e = thrown()
@@ -333,22 +320,22 @@ class PosixFilesTest extends FilesTest {
 
     @Unroll
     def "can get mode for a file behind symbolic link"() {
-        def testFile = new File(tmpDir, name)
+        def testFile = new File(tmpDir.root, name)
         testFile.parentFile.mkdirs()
         testFile.text = "hi"
-        posixFiles.setMode(testFile, 0660)
+        files.setMode(testFile, 0660)
 
-        def symlinkFile = new File(tmpDir, name + '.link')
+        def symlinkFile = new File(tmpDir.root, name + '.link')
 
         when:
-        posixFiles.symlink(symlinkFile, testFile.name)
+        files.symlink(symlinkFile, testFile.name)
 
         then:
-        posixFiles.getMode(symlinkFile, true) == posixFiles.getMode(testFile)
-        posixFiles.getMode(symlinkFile, false) != posixFiles.getMode(testFile)
-        posixFiles.getMode(symlinkFile, false) == posixFiles.getMode(symlinkFile)
+        files.getMode(symlinkFile, true) == files.getMode(testFile)
+        files.getMode(symlinkFile, false) != files.getMode(testFile)
+        files.getMode(symlinkFile, false) == files.getMode(symlinkFile)
 
-        posixFiles.getMode(testFile, true) == posixFiles.getMode(testFile)
+        files.getMode(testFile, true) == files.getMode(testFile)
 
         where:
         name << names
@@ -356,19 +343,19 @@ class PosixFilesTest extends FilesTest {
 
     @Unroll
     def "can get mode for a file behind broken symbolic link"() {
-        def brokenSymlinkFile = new File(tmpDir, name + '.link')
+        def brokenSymlinkFile = new File(tmpDir.root, name + '.link')
         brokenSymlinkFile.parentFile.mkdirs()
-        posixFiles.symlink(brokenSymlinkFile, name)
+        files.symlink(brokenSymlinkFile, name)
 
         when:
-        posixFiles.getMode(brokenSymlinkFile, false)
-        posixFiles.getMode(brokenSymlinkFile)
+        files.getMode(brokenSymlinkFile, false)
+        files.getMode(brokenSymlinkFile)
 
         then:
         noExceptionThrown()
 
         when:
-        posixFiles.getMode(brokenSymlinkFile, true)
+        files.getMode(brokenSymlinkFile, true)
 
         then:
         NativeException e = thrown()

@@ -1,5 +1,6 @@
 package gradlebuild;
 
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.provider.ProviderFactory;
@@ -7,7 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -31,6 +36,9 @@ public abstract class VersioningPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         VersionDetails.BuildType buildType = determineBuildType(project);
+        if (buildType != VersionDetails.BuildType.Dev && JavaVersion.current() != JavaVersion.VERSION_1_8) {
+            throw new RuntimeException("Java 8 is required to build a release of native-platform. Later versions are not supported.");
+        }
         String buildTimestamp = determineBuildTimestamp(project);
         writeBuildTimestamp(buildTimestamp, project);
         String version = determineVersion(buildType, buildTimestamp);
@@ -59,7 +67,7 @@ public abstract class VersioningPlugin implements Plugin<Project> {
     }
 
     private String getGradleProperty(String propertyName) {
-        String value = getProviderFactory().gradleProperty(propertyName).getOrNull();
+        String value = getProviderFactory().gradleProperty(propertyName).forUseAtConfigurationTime().getOrNull();
         if (value == null || value.isEmpty()) {
             throw new UnsupportedOperationException("No value for Gradle property '" + propertyName + "' specified");
         }
@@ -79,7 +87,7 @@ public abstract class VersioningPlugin implements Plugin<Project> {
 
     private String determineBuildTimestamp(Project project) {
         File buildReceipt = new File(project.file("incoming-distributions"), BUILD_RECEIPT_NAME);
-        if (getProviderFactory().gradleProperty("ignoreIncomingBuildReceipt").isPresent() || !buildReceipt.isFile()) {
+        if (getProviderFactory().gradleProperty("ignoreIncomingBuildReceipt").forUseAtConfigurationTime().isPresent() || !buildReceipt.isFile()) {
             return ZonedDateTime.now().format(SNAPSHOT_TIMESTAMP_FORMATTER);
         }
         Properties properties = new Properties();

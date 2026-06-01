@@ -2,11 +2,16 @@ package gradlebuild;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import org.gradle.api.*;
+import org.gradle.api.Action;
+import org.gradle.api.JavaVersion;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
@@ -42,7 +47,8 @@ public abstract class NativePlatformComponentPlugin implements Plugin<Project> {
     }
 
     private void configureJavaCompatibility(Project project) {
-        JavaVersion compatibility = JavaVersion.VERSION_1_8;
+        // Java 9 and later don't support targetting Java 5
+        JavaVersion compatibility = JavaVersion.current().isJava9Compatible() ? JavaVersion.VERSION_1_6 : JavaVersion.VERSION_1_5;
 
         JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
         java.setSourceCompatibility(compatibility);
@@ -50,19 +56,18 @@ public abstract class NativePlatformComponentPlugin implements Plugin<Project> {
     }
 
     private void configureTestTasks(Project project) {
+        JavaPluginConvention javaPluginConvention = project.getConvention().getPlugin(JavaPluginConvention.class);
         project.getTasks().withType(Test.class).configureEach(test -> {
-            JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-            test.useJUnitPlatform();
             test.systemProperty(TEST_DIRECTORY_SYSTEM_PROPERTY, project.getLayout().getBuildDirectory().dir("test files").map(dir -> dir.getAsFile().getAbsoluteFile()).get());
 
             // Reconfigure the classpath for the test task here, so we can use dependency substitution on `testRuntimeClasspath`
             // to test an external dependency.
             // We omit `sourceSets.main.output` here and replace it with a test dependency on `project(':')` further down.
             Configuration testRuntimeClasspath = project.getConfigurations().getByName("testRuntimeClasspath");
-            SourceSetOutput testOutput = javaPluginExtension.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput();
+            SourceSetOutput testOutput = javaPluginConvention.getSourceSets().getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput();
             test.setClasspath(project.files(testRuntimeClasspath, testOutput));
 
-            Provider<String> agentName = project.getProviders().gradleProperty("agentName");
+            Provider<String> agentName = project.getProviders().gradleProperty("agentName").forUseAtConfigurationTime();
             test.systemProperty("agentName", agentName.getOrElse("Unknown"));
         });
 
@@ -83,7 +88,7 @@ public abstract class NativePlatformComponentPlugin implements Plugin<Project> {
                         getExecOperations().exec(spec -> {
                             spec.commandLine(
                                 findmntPath,
-                                "-n", "-o", "FSTYPE", "-T", mountPoint);
+                                "-n",  "-o", "FSTYPE", "-T", mountPoint);
                             spec.setStandardOutput(outputStream);
                         }).assertNormalExitValue();
                         String detectedFileSystemType = new String(outputStream.toByteArray(), StandardCharsets.UTF_8).trim();
@@ -98,10 +103,7 @@ public abstract class NativePlatformComponentPlugin implements Plugin<Project> {
         // This allows using dependency substitution for the root project.
         DependencyHandler dependencies = project.getDependencies();
         project.getDependencies().add("testImplementation", project.getDependencies().project(ImmutableMap.of("path", project.getPath())));
-        dependencies.add("testImplementation", "org.spockframework:spock-core:2.3-groovy-4.0");
-        dependencies.add("testImplementation", "org.junit.jupiter:junit-jupiter-api:5.9.2");
-        dependencies.add("testRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:5.9.2");
-        dependencies.add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher");
+        dependencies.add("testImplementation", "org.spockframework:spock-core:1.3-groovy-2.5");
     }
 
     @Inject

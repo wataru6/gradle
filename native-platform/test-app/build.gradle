@@ -3,19 +3,14 @@ plugins {
     id('gradlebuild.native-platform-component')
 }
 
-application {
-    mainClass = 'net.rubygrapefruit.platform.test.Main'
-    applicationName = 'native-platform-test'
-}
-
-base {
-    archivesName = 'native-platform-test'
-}
+mainClassName = 'net.rubygrapefruit.platform.test.Main'
+applicationName = 'native-platform-test'
+archivesBaseName = 'native-platform-test'
 
 if (versions.useRepo) {
-    configurations.configureEach {
+    configurations.all {
         resolutionStrategy.dependencySubstitution {
-            substitute project(':native-platform') using module("net.rubygrapefruit:native-platform:${version}")
+            substitute project(':native-platform') with module("net.rubygrapefruit:native-platform:${version}")
         }
     }
     configurations {
@@ -40,12 +35,11 @@ publishing {
 }
 
 // Download and unpack the application to allow it to be tested
-tasks.register('download') {
-    def downloadDir = project.layout.buildDirectory.dir("download")
+task download {
     doLast {
         copy {
             from(configurations.download.files.collect { zipTree(it) })
-            into(downloadDir)
+            into("$buildDir/download")
         }
     }
 }
@@ -53,11 +47,4 @@ tasks.register('download') {
 // Use System.in as input stream for the launched process to enable interactive input
 tasks.named("run", JavaExec) {
     standardInput = System.in
-}
-
-java {
-    toolchain {
-        // Configure Java 8, so we test that native-platform is compiled to Java 8
-        languageVersion = JavaLanguageVersion.of(8)
-    }
 }

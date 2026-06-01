@@ -18,8 +18,11 @@ package net.rubygrapefruit.platform.file
 
 import net.rubygrapefruit.platform.NativePlatformSpec
 import net.rubygrapefruit.platform.internal.Platform
-import org.junit.jupiter.api.Assumptions
+import org.junit.Rule
+import org.junit.rules.TemporaryFolder
 import spock.lang.Requires
+
+import static org.junit.Assume.assumeTrue
 
 class FileSystemsTest extends NativePlatformSpec {
     private static final List<String> EXPECTED_FILE_SYSTEM_TYPES = [
@@ -37,6 +40,8 @@ class FileSystemsTest extends NativePlatformSpec {
         'NTFS'
     ]
 
+    @Rule TemporaryFolder tmpDir
+
     final FileSystems fileSystems = getIntegration(FileSystems)
 
     def "caches file systems instance"() {
@@ -49,7 +54,7 @@ class FileSystemsTest extends NativePlatformSpec {
         def mountedFileSystems = fileSystems.fileSystems
         then:
         mountedFileSystems.collect() { it.mountPoint }.containsAll(File.listRoots())
-        mountedFileSystems.every { it.caseSensitivity != null || it.fileSystemType == "hfs" }
+        mountedFileSystems.every { it.caseSensitivity != null }
         mountedFileSystems.any { EXPECTED_FILE_SYSTEM_TYPES.contains(it.fileSystemType) }
     }
 
@@ -57,7 +62,7 @@ class FileSystemsTest extends NativePlatformSpec {
     @Requires({ Platform.current().linux })
     def "detects file systems of mount points correctly"() {
         def mountPoint = "/${fileSystemType}"
-        Assumptions.assumeTrue(new File(mountPoint).exists(), "Mount point for ${fileSystemType} exists")
+        assumeTrue("Mount point for ${fileSystemType} exists", new File(mountPoint).exists())
 
         when:
         def mountedFileSystems = fileSystems.fileSystems
