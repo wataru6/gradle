@@ -5,7 +5,6 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GRADLE_DIR="${GRADLE_DIR:-$ROOT_DIR/gradle}"
 NATIVE_PLATFORM_VERSION="${NATIVE_PLATFORM_VERSION:-0.22-milestone-28-custom}"
 NATIVE_PLATFORM_REPO="${NATIVE_PLATFORM_REPO:-$ROOT_DIR/native-platform/build/repo}"
-GRADLE_VERSION_QUALIFIER="${GRADLE_VERSION_QUALIFIER:-custom}"
 INIT_SCRIPT="$ROOT_DIR/ci/custom-native-platform.init.gradle"
 VERSION_FILE="$GRADLE_DIR/packaging/distributions-dependencies/build.gradle.kts"
 
@@ -60,17 +59,12 @@ java -version
 
 cd "$GRADLE_DIR"
 
-gradle_version_args=()
-if [[ -n "$GRADLE_VERSION_QUALIFIER" ]]; then
-  gradle_version_args+=("-PversionQualifier=$GRADLE_VERSION_QUALIFIER")
-fi
-
 GRADLE_CHECKOUT_DIR="$GRADLE_DIR" NATIVE_PLATFORM_REPO="$NATIVE_PLATFORM_REPO" ./gradlew \
   --no-daemon \
   --stacktrace \
   --dependency-verification off \
   --init-script "$INIT_SCRIPT" \
-  "${gradle_version_args[@]}" \
+  -PfinalRelease=true \
   :distributions-full:binDistributionZip
 
 distribution_zip="$(find "$GRADLE_DIR/packaging/distributions-full/build/distributions" -name 'gradle-*-bin.zip' -type f -print -quit)"
