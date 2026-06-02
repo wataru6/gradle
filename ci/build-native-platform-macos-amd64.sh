@@ -43,7 +43,6 @@ cd "$NATIVE_PLATFORM_DIR"
   --no-daemon \
   --stacktrace \
   clean \
-  :native-platform:build \
   :native-platform:publishAllPublicationsToLocalFileRepository \
   -PonlyLocalVariants \
   "-PnextVersion=$NATIVE_PLATFORM_BASE_VERSION"
