@@ -65,7 +65,7 @@ if [[ -n "$GRADLE_VERSION_QUALIFIER" ]]; then
   gradle_version_args+=("-PversionQualifier=$GRADLE_VERSION_QUALIFIER")
 fi
 
-NATIVE_PLATFORM_REPO="$NATIVE_PLATFORM_REPO" ./gradlew \
+GRADLE_CHECKOUT_DIR="$GRADLE_DIR" NATIVE_PLATFORM_REPO="$NATIVE_PLATFORM_REPO" ./gradlew \
   --no-daemon \
   --stacktrace \
   --dependency-verification off \

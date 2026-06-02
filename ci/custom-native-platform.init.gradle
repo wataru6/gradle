@@ -1,13 +1,23 @@
 def nativePlatformRepoPath = System.getenv("NATIVE_PLATFORM_REPO")
+def gradleCheckoutPath = System.getenv("GRADLE_CHECKOUT_DIR")
 
 if (nativePlatformRepoPath == null || nativePlatformRepoPath.trim().isEmpty()) {
     throw new GradleException("NATIVE_PLATFORM_REPO must point to the local Maven repository with custom native-platform artifacts.")
 }
 
+if (gradleCheckoutPath == null || gradleCheckoutPath.trim().isEmpty()) {
+    throw new GradleException("GRADLE_CHECKOUT_DIR must point to the Gradle source checkout.")
+}
+
 def nativePlatformRepoDir = new File(nativePlatformRepoPath)
+def gradleCheckoutDir = new File(gradleCheckoutPath).canonicalFile
 
 if (!nativePlatformRepoDir.isDirectory()) {
     throw new GradleException("NATIVE_PLATFORM_REPO does not exist or is not a directory: ${nativePlatformRepoDir}")
+}
+
+if (!gradleCheckoutDir.isDirectory()) {
+    throw new GradleException("GRADLE_CHECKOUT_DIR does not exist or is not a directory: ${gradleCheckoutDir}")
 }
 
 def configureNativePlatformRepository = { repositories ->
@@ -25,6 +35,9 @@ def configureNativePlatformRepository = { repositories ->
 }
 
 gradle.beforeProject { project ->
+    if (project.rootProject.projectDir.canonicalFile != gradleCheckoutDir) {
+        return
+    }
     configureNativePlatformRepository(project.buildscript.repositories)
     configureNativePlatformRepository(project.repositories)
 }
