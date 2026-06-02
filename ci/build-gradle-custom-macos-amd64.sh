@@ -53,6 +53,8 @@ if ! grep -nF "val nativePlatformVersion = \"$NATIVE_PLATFORM_VERSION\"" "$VERSI
 fi
 
 echo "Building Gradle distribution with custom native-platform from $NATIVE_PLATFORM_REPO"
+echo "Custom native-platform Maven repository contents:"
+find "$NATIVE_PLATFORM_REPO/net/rubygrapefruit" -type f | sort
 echo "Using JAVA_HOME=${JAVA_HOME:-not set}"
 java -version
 

@@ -11,18 +11,14 @@ if (!nativePlatformRepoDir.isDirectory()) {
 }
 
 def configureNativePlatformRepository = { repositories ->
-    repositories.exclusiveContent {
-        forRepository {
-            maven {
-                name = "Custom native-platform"
-                url = nativePlatformRepoDir.toURI()
-                metadataSources {
-                    mavenPom()
-                    artifact()
-                }
-            }
+    repositories.maven {
+        name = "Custom native-platform"
+        url = nativePlatformRepoDir.toURI()
+        metadataSources {
+            mavenPom()
+            artifact()
         }
-        filter {
+        content {
             includeGroup("net.rubygrapefruit")
         }
     }
