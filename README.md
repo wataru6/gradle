@@ -33,11 +33,11 @@ Gradle 9.1.0 使用的是 `0.22-milestone-28`；9.3.1 升级到了 `0.22-milesto
    git push -u origin codex/gradle-9.3.1
    ```
 
-2. 打开仓库的 **Actions → Build custom Gradle macOS amd64 → Run workflow**。
-3. 在分支下拉框中选择 **`codex/gradle-9.3.1`**，保留依赖版本 **`0.22-milestone-29-custom`**，运行工作流。选择 `master` 会构建该分支原有的 9.1.0 源码。
+2. 推送 `codex/gradle-9.3.1` 分支的源码或构建配置修改后，会自动启动 Actions 构建。
+3. 如需手动重跑，打开仓库的 **Actions → Build custom Gradle macOS amd64 → Run workflow**，选择 **`codex/gradle-9.3.1`** 分支，保留依赖版本 **`0.22-milestone-29-custom`**。选择 `master` 会构建该分支原有的 9.1.0 源码。
 4. 成功后下载 `custom-gradle-9.3.1-macos-amd64-bin` artifact，并解开 GitHub artifact 的外层 ZIP。实际发行包是其中的 **`gradle-9.3.1-bin.zip`**，旁边附有 SHA-256 文件。
 
-工作流仍然手动触发；普通 push 不会执行构建。它在 `macos-15-intel` 上先用 JDK 8 编译和测试 native-platform，再用 JDK 17 构建 Gradle。验证步骤会比较发行包内两个 native-platform JAR 与刚编译的 JAR 的字节内容，并运行发行包的 `--version` 和空项目 `help`。
+工作流支持升级分支 push 自动触发和手动触发。它在 `macos-15-intel` 上先用 JDK 8 编译和测试 native-platform，再用 JDK 17 构建 Gradle。验证步骤会比较发行包内两个 native-platform JAR 与刚编译的 JAR 的字节内容，并运行发行包的 `--version` 和空项目 `help`。
 
 这个构建流程只发布本机的 `osx-amd64` 原生库，产物面向 macOS x86_64。
 

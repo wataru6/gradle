@@ -10,19 +10,21 @@ on:
         default: 0.22-milestone-29-custom
   push:
     branches:
-      - master
+      - codex/gradle-9.3.1
     paths:
       - .github/workflows/build-custom-gradle-macos-amd64.yml
+      - ci/**
+      - gradle/**
+      - native-platform/**
 
 jobs:
   build:
     name: Build custom Gradle distribution
-    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15-intel
     timeout-minutes: 180
 
     env:
-      NATIVE_PLATFORM_VERSION: ${{ inputs.native_platform_version }}
+      NATIVE_PLATFORM_VERSION: ${{ inputs.native_platform_version || '0.22-milestone-29-custom' }}
       NATIVE_PLATFORM_REPO: ${{ github.workspace }}/native-platform/build/repo
 
     steps:
@@ -57,7 +59,7 @@ jobs:
       - name: Upload native-platform Maven repository
         uses: actions/upload-artifact@v4
         with:
-          name: native-platform-${{ inputs.native_platform_version }}-macos-amd64-maven-repo
+          name: native-platform-${{ env.NATIVE_PLATFORM_VERSION }}-macos-amd64-maven-repo
           path: native-platform/build/repo
           if-no-files-found: error
 
