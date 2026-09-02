@@ -13,9 +13,16 @@ nativeVersion {
 }
 
 dependencies {
-    implementation gradleApi()
+    // gradleApi() bundles native-platform classes and shadows the library under test.
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    implementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+}
+
+tasks.named('test', Test) {
+    testLogging {
+        exceptionFormat = 'full'
+        showStandardStreams = true
+    }
 }
 
 javadoc {

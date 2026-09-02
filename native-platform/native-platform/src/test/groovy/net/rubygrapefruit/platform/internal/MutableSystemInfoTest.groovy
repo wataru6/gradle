@@ -5,6 +5,10 @@ import net.rubygrapefruit.platform.SystemInfo
 import spock.lang.Specification
 
 class MutableSystemInfoTest extends Specification {
+    def setupSpec() {
+        println "MutableSystemInfo loaded from: ${MutableSystemInfo.protectionDomain.codeSource.location}"
+    }
+
     def "recognizes macOS CPU brand string #processor"() {
         given:
         def info = new MutableSystemInfo(osName: "Darwin", machineArchitecture: processor)

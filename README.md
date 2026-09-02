@@ -23,6 +23,8 @@ Gradle 9.1.0 使用的是 `0.22-milestone-28`；9.3.1 升级到了 `0.22-milesto
 
 可重放的补丁另存于 `ci/patches/native-platform-cpu-detection.patch`。回归测试覆盖新旧 Intel、AMD、Apple、原有架构别名和未知 CPU。
 
+另外，`ci/patches/native-platform-build-dependencies.patch` 移除了 milestone-29 在 native-platform 库中引入的 `implementation gradleApi()`，并将 JUnit API 限定到测试依赖。Gradle API JAR 包含另一份 native-platform 类，会覆盖待测试的自定义实现，导致新 Intel 和 AMD 的 6 个回归用例失败。测试日志会输出 `MutableSystemInfo` 实际加载的 JAR 路径，Actions 同时保留 HTML/XML 测试报告。
+
 ## 在 GitHub Actions 构建
 
 1. 将本地升级分支的修改提交并推送，例如：
@@ -94,11 +96,13 @@ distributionSha256Sum=<本次构建生成的 SHA-256>
 1. 从当前工作创建新的版本分支，选定官方稳定发布标签 `vX.Y.Z`，记录其提交 ID。
 2. 比对旧版上游和本地源码，保存定制差异；用目标标签完整更新 `gradle/`，包含上游删除的旧文件。
 3. 查看 `gradle/packaging/distributions-dependencies/build.gradle.kts` 的 `nativePlatformVersion`，将 `native-platform/` 更新到对应版本。保留本地回归测试。
-4. 先确认目标版本是否已修复 CPU 判断；需要时在仓库根目录重放补丁：
+4. 先确认目标版本是否已修复 CPU 判断和测试依赖冲突；仍需修复时，在仓库根目录重放相应补丁：
 
    ```bash
    git apply --check --directory=native-platform ci/patches/native-platform-cpu-detection.patch
    git apply --directory=native-platform ci/patches/native-platform-cpu-detection.patch
+   git apply --check --directory=native-platform ci/patches/native-platform-build-dependencies.patch
+   git apply --directory=native-platform ci/patches/native-platform-build-dependencies.patch
    ```
 
    当前源码已经包含补丁，无需再次应用。

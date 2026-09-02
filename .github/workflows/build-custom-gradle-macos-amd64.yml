@@ -56,6 +56,16 @@ jobs:
       - name: Build custom native-platform
         run: bash ci/build-native-platform-macos-amd64.sh
 
+      - name: Upload native-platform test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-platform-test-reports
+          path: |
+            native-platform/native-platform/build/reports/tests/test
+            native-platform/native-platform/build/test-results/test
+          if-no-files-found: ignore
+
       - name: Upload native-platform Maven repository
         uses: actions/upload-artifact@v4
         with:
