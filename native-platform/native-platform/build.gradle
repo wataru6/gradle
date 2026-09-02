@@ -15,6 +15,8 @@ nativeVersion {
 dependencies {
     // gradleApi() bundles native-platform classes and shadows the library under test.
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    // Use the wrapper's complete Groovy compiler without pulling in its Gradle API JAR.
+    testImplementation localGroovy()
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
 }
 

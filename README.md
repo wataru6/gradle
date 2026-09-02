@@ -23,7 +23,7 @@ Gradle 9.1.0 使用的是 `0.22-milestone-28`；9.3.1 升级到了 `0.22-milesto
 
 可重放的补丁另存于 `ci/patches/native-platform-cpu-detection.patch`。回归测试覆盖新旧 Intel、AMD、Apple、原有架构别名和未知 CPU。
 
-另外，`ci/patches/native-platform-build-dependencies.patch` 移除了 milestone-29 在 native-platform 库中引入的 `implementation gradleApi()`，并将 JUnit API 限定到测试依赖。Gradle API JAR 包含另一份 native-platform 类，会覆盖待测试的自定义实现，导致新 Intel 和 AMD 的 6 个回归用例失败。测试日志会输出 `MutableSystemInfo` 实际加载的 JAR 路径，Actions 同时保留 HTML/XML 测试报告。
+另外，`ci/patches/native-platform-build-dependencies.patch` 移除了 milestone-29 在 native-platform 库中引入的 `implementation gradleApi()`，并将 JUnit API 限定到测试依赖。Gradle API JAR 包含另一份 native-platform 类，会覆盖待测试的自定义实现，导致新 Intel 和 AMD 的 6 个回归用例失败。测试编译通过 `testImplementation localGroovy()` 使用 Wrapper 自带的完整 Groovy 工具链，避免额外解析上游校验清单未覆盖的编译器依赖。测试日志会输出 `MutableSystemInfo` 实际加载的 JAR 路径，Actions 同时保留 HTML/XML 测试报告及构建诊断报告。
 
 ## 在 GitHub Actions 构建
 

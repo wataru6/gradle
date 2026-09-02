@@ -64,6 +64,8 @@ jobs:
           path: |
             native-platform/native-platform/build/reports/tests/test
             native-platform/native-platform/build/test-results/test
+            native-platform/build/reports/dependency-verification
+            native-platform/build/reports/problems
           if-no-files-found: ignore
 
       - name: Upload native-platform Maven repository

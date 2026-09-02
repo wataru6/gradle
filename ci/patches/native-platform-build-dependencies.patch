@@ -1,8 +1,8 @@
 diff --git a/native-platform/build.gradle b/native-platform/build.gradle
-index 83f5a6bc..9a739170 100755
+index 83f5a6bc..9d7781a3 100755
 --- a/native-platform/build.gradle
 +++ b/native-platform/build.gradle
-@@ -13,9 +13,16 @@ nativeVersion {
+@@ -13,9 +13,18 @@ nativeVersion {
  }
  
  dependencies {
@@ -10,6 +10,8 @@ index 83f5a6bc..9a739170 100755
 +    // gradleApi() bundles native-platform classes and shadows the library under test.
      compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 -    implementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
++    // Use the wrapper's complete Groovy compiler without pulling in its Gradle API JAR.
++    testImplementation localGroovy()
 +    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
 +}
 +
