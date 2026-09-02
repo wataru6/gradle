@@ -432,7 +432,7 @@ class TestSuitesIntegrationTest extends AbstractIntegrationSpec {
         succeeds("integTest")
 
         and:
-        result.assertTaskExecuted(":integTest")
+        result.assertTaskScheduled(":integTest")
     }
 
     def "task configuration overrules test suite configuration with test suite set test framework"() {
@@ -482,7 +482,7 @@ class TestSuitesIntegrationTest extends AbstractIntegrationSpec {
         succeeds("integTest")
 
         and:
-        result.assertTaskExecuted(":integTest")
+        result.assertTaskScheduled(":integTest")
     }
 
     @Issue("https://github.com/gradle/gradle/issues/18622")
@@ -996,10 +996,11 @@ class TestSuitesIntegrationTest extends AbstractIntegrationSpec {
 
             include("app")
         """
-        executer.noDeprecationChecks()
 
         expect: "should be able to reference the project without failing"
+        executer.expectDocumentedDeprecationWarning("Depending on the resolving project's module coordinates has been deprecated. This will fail with an error in Gradle 10. Use a project dependency instead. Consult the upgrading guide for further information: https://docs.gradle.org/current/userguide/upgrading_version_9.html#module_identity_for_root_component")
         succeeds ':app:assemble', ':app:integrationTest'
+
         def unitTestResults = new JUnitXmlTestExecutionResult(testDirectory, 'app/build/test-results/integrationTest')
         unitTestResults.assertTestClassesExecuted('org.example.app.ExampleTest')
     }
@@ -1084,5 +1085,34 @@ class TestSuitesIntegrationTest extends AbstractIntegrationSpec {
 
         expect:
         succeeds("test", "anotherTest")
+    }
+
+    @Issue("https://github.com/gradle/gradle/issues/36428")
+    def "cross-project dependency manipulation with allDependencies.configureEach does not break test suite creation"() {
+        given: "a multi-project build with cross-project configuration accessing allDependencies"
+        settingsFile << """
+            include 'sub'
+        """
+
+        buildFile << """
+            subprojects {
+                configurations.configureEach {
+                    allDependencies.configureEach {
+                        // This is bad practice but should not cause a failure
+                    }
+                }
+            }
+        """
+
+        file('sub/build.gradle') << """
+            plugins {
+                id 'java-library'
+            }
+
+            ${mavenCentralRepository()}
+        """
+
+        expect: "the build should succeed without errors about finalized properties"
+        succeeds(":sub:dependencies")
     }
 }

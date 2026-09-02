@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NATIVE_PLATFORM_DIR="${NATIVE_PLATFORM_DIR:-$ROOT_DIR/native-platform}"
-NATIVE_PLATFORM_VERSION="${NATIVE_PLATFORM_VERSION:-0.22-milestone-28-custom}"
+NATIVE_PLATFORM_VERSION="${NATIVE_PLATFORM_VERSION:-0.22-milestone-29-custom}"
 NATIVE_PLATFORM_REPO="${NATIVE_PLATFORM_REPO:-$NATIVE_PLATFORM_DIR/build/repo}"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
@@ -24,7 +24,7 @@ fi
 if [[ "$NATIVE_PLATFORM_VERSION" =~ ^([0-9]+(\.[0-9]+)+) ]]; then
   NATIVE_PLATFORM_BASE_VERSION="${BASH_REMATCH[1]}"
 else
-  echo "NATIVE_PLATFORM_VERSION must start with a numeric base version, for example 0.22-dev or 0.22-milestone-28-custom." >&2
+  echo "NATIVE_PLATFORM_VERSION must start with a numeric base version, for example 0.22-dev or 0.22-milestone-29-custom." >&2
   exit 1
 fi
 
@@ -43,6 +43,8 @@ cd "$NATIVE_PLATFORM_DIR"
   --no-daemon \
   --stacktrace \
   clean \
+  :native-platform:test \
+  --tests net.rubygrapefruit.platform.internal.MutableSystemInfoTest \
   :native-platform:publishAllPublicationsToLocalFileRepository \
   -PonlyLocalVariants \
   "-PnextVersion=$NATIVE_PLATFORM_BASE_VERSION"

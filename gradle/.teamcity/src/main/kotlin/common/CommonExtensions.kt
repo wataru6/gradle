@@ -32,6 +32,7 @@ import jetbrains.buildServer.configs.kotlin.CheckoutMode
 import jetbrains.buildServer.configs.kotlin.Dependencies
 import jetbrains.buildServer.configs.kotlin.FailureAction
 import jetbrains.buildServer.configs.kotlin.Project
+import jetbrains.buildServer.configs.kotlin.PublishMode
 import jetbrains.buildServer.configs.kotlin.RelativeId
 import jetbrains.buildServer.configs.kotlin.Requirements
 import jetbrains.buildServer.configs.kotlin.buildSteps.GradleBuildStep
@@ -112,6 +113,27 @@ fun Requirements.requiresNotSharedHost() {
  */
 const val HIDDEN_ARTIFACT_DESTINATION = ".teamcity/gradle-logs"
 
+fun BuildType.addEc2PostBuild(os: Os = Os.LINUX) {
+    if (os !in listOf(Os.WINDOWS, Os.MACOS)) {
+        steps {
+            exec {
+                name = "EC2_POST_BUILD"
+                executionMode = BuildStep.ExecutionMode.ALWAYS
+                path = ".teamcity/scripts/post_build_on_ec2.sh"
+
+                conditions {
+                    requiresEc2Agent()
+                }
+            }
+        }
+    }
+}
+
+fun BuildTypeSettings.setArtifactRules(rules: String) {
+    artifactRules = rules
+    publishArtifacts = PublishMode.ALWAYS
+}
+
 fun BuildType.applyDefaultSettings(
     os: Os = Os.LINUX,
     arch: Arch = Arch.AMD64,
@@ -126,6 +148,8 @@ fun BuildType.applyDefaultSettings(
         build/report-* => $HIDDEN_ARTIFACT_DESTINATION
         build/tmp/teŝt files/** => $HIDDEN_ARTIFACT_DESTINATION/teŝt-files
         build/errorLogs/** => $HIDDEN_ARTIFACT_DESTINATION/errorLogs
+        artifact-cache-metrics => artifact-cache-metrics
+        artifact-cache-report => artifact-cache-report
         build/reports/configuration-cache/**/configuration-cache-report.html
         subprojects/internal-build-reports/build/reports/incubation/all-incubating.html => incubation-reports
         testing/architecture-test/build/reports/binary-compatibility/report.html => binary-compatibility-reports
@@ -133,7 +157,7 @@ fun BuildType.applyDefaultSettings(
         build/reports/problems/problems-report.html
         """.trimIndent()
 
-    artifactRules = artifactRuleOverride ?: defaultArtifactRules
+    setArtifactRules(artifactRuleOverride ?: defaultArtifactRules)
     paramsForBuildToolBuild(buildJvm, os, arch)
     params {
         // The promotion job doesn't have a branch, so %teamcity.build.branch% doesn't work.
@@ -205,8 +229,6 @@ fun BuildType.paramsForBuildToolBuild(
 ) {
     params {
         param("env.BOT_TEAMCITY_GITHUB_TOKEN", "%github.bot-teamcity.token%")
-        param("env.GRADLE_CACHE_REMOTE_SERVER", "%gradle.cache.remote.server%")
-
         param("env.JAVA_HOME", javaHome(buildJvm, os, arch))
         param("env.ANDROID_HOME", os.androidHome)
         param("env.ANDROID_SDK_ROOT", os.androidHome)
@@ -332,10 +354,11 @@ fun functionalTestParameters(
 ): List<String> =
     listOf(
         "-PteamCityBuildId=%teamcity.build.id%",
-        os.javaInstallationLocations(arch),
+        "-Dorg.gradle.java.installations.auto-download=false",
         "-Porg.gradle.java.installations.auto-download=false",
+        "-Dorg.gradle.java.installations.auto-detect=false",
         "-Porg.gradle.java.installations.auto-detect=false",
-    )
+    ) + os.javaInstallationLocations(arch)
 
 fun promotionBuildParameters(
     dependencyBuildId: RelativeId,
@@ -380,7 +403,13 @@ fun BuildSteps.killProcessStep(
                     arch,
                 )
             }/bin/java\" build-logic/cleanup/src/main/java/gradlebuild/cleanup/services/KillLeakingJavaProcesses.java $mode" +
-            if (os == Os.WINDOWS) "\nwmic Path win32_process Where \"name='java.exe'\"" else ""
+            if (os ==
+                Os.WINDOWS
+            ) {
+                "\npowershell -Command \"Get-CimInstance -ClassName Win32_Process -Filter \\\"Name = 'java.exe'\\\" | Select-Object ProcessId, Name, CommandLine | Format-List\""
+            } else {
+                ""
+            }
         skipConditionally(buildType)
         if (mode == KILL_ALL_GRADLE_PROCESSES && buildType is FunctionalTest) {
             onlyRunOnGitHubMergeQueueBranch()
@@ -409,7 +438,7 @@ fun String.toCamelCase() = lowercase().replace(Regex("_[a-z]")) { it.value[1].up
  *
  * @param historyDays days number of days to store build history .
  * @param artifactsDays number of days to store artifacts. In the stored history, artifacts older than this number will be cleaned up.
- * @param artifactPatterns patterns for artifacts clean-up. If not specified, all artifacts will be removed.
+ * @param artifactsPatterns patterns for artifacts clean-up. If not specified, all artifacts will be removed.
  */
 fun Project.cleanupRule(
     historyDays: Int,

@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.util.function.Function;
 
 /**
  * Various utilities for dealing with IO actions.
@@ -81,10 +83,10 @@ public abstract class IoActions {
         uncheckedClose(resource);
     }
 
-    public static <T extends Closeable, R> R withResource(T resource, InternalTransformer<R, ? super T> action) {
+    public static <T extends Closeable, R> R withResource(T resource, Function<? super T, R> action) {
         R result;
         try {
-            result = action.transform(resource);
+            result = action.apply(resource);
         } catch (Throwable t) {
             closeQuietly(resource);
             throw UncheckedException.throwAsUncheckedException(t);
@@ -144,6 +146,8 @@ public abstract class IoActions {
                 try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), encoding))) {
                     action.execute(writer);
                 }
+            } catch (FileSystemException e) {
+                throw new UncheckedIOException(String.format("%s: '%s'.", e.getReason(), file), e);
             } catch (IOException e) {
                 throw new UncheckedIOException(String.format("Could not write to file '%s'.", file), e);
             }

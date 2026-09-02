@@ -71,9 +71,4 @@ public class DaemonGradleExecuter extends NoDaemonGradleExecuter {
         super.reset();
         return this;
     }
-
-    @Override
-    protected boolean isDebuggerAttached() {
-        return isDebuggerAttachedImpl();
-    }
 }

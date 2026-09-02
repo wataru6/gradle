@@ -37,6 +37,7 @@ import org.gradle.internal.component.model.ComponentGraphSpecificResolveState;
 import org.gradle.internal.component.model.ComponentIdGenerator;
 import org.gradle.internal.component.model.DependencyMetadata;
 import org.gradle.internal.component.model.ForcingDependencyMetadata;
+import org.gradle.internal.deprecation.DeprecationLogger;
 import org.gradle.internal.resolve.resolver.ComponentMetaDataResolver;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -78,7 +79,7 @@ public class ModuleResolveState implements CandidateModule {
     private final boolean rootModule;
     private SelectorStateResolver<ComponentState> selectorStateResolver;
     private final PendingDependencies pendingDependencies;
-    private ComponentState selected;
+    private @Nullable ComponentState selected;
     private ImmutableAttributes mergedConstraintAttributes = ImmutableAttributes.EMPTY;
 
     private @Nullable AttributeMergingException attributeMergingError;
@@ -86,7 +87,6 @@ public class ModuleResolveState implements CandidateModule {
     private boolean overriddenSelection;
     private Set<VirtualPlatformState> platformOwners;
     private boolean replaced = false;
-    private boolean changingSelection;
     private int selectionChangedCounter;
 
     ModuleResolveState(
@@ -202,10 +202,6 @@ public class ModuleResolveState implements CandidateModule {
         selected.select();
     }
 
-    public boolean isChangingSelection() {
-        return changingSelection;
-    }
-
     /**
      * Changes the selected target component for this module due to version conflict resolution.
      */
@@ -215,16 +211,10 @@ public class ModuleResolveState implements CandidateModule {
         assert this.selected != newSelection;
         assert newSelection.getModule() == this;
 
-        changingSelection = true;
-
-        // Remove any outgoing edges for the current selection
-        selected.removeOutgoingEdges();
-
         this.selected = newSelection;
         this.replaced = false;
 
         doRestart(newSelection);
-        changingSelection = false;
     }
 
     /**
@@ -234,7 +224,9 @@ public class ModuleResolveState implements CandidateModule {
      */
     public void clearSelection() {
         if (selected != null) {
-            selected.removeOutgoingEdges();
+            for (NodeState node : selected.getNodes()) {
+                node.deselect();
+            }
         }
         for (ComponentState version : versions.values()) {
             if (version.isSelected()) {
@@ -252,13 +244,6 @@ public class ModuleResolveState implements CandidateModule {
      */
     @Override
     public void replaceWith(ComponentState selected) {
-        if (this.selected != null) {
-            clearSelection();
-        }
-
-        assert this.selected == null;
-        assert selected != null;
-
         if (!selected.getModule().getId().equals(getId())) {
             this.overriddenSelection = true;
         }
@@ -310,15 +295,30 @@ public class ModuleResolveState implements CandidateModule {
 
     public void removeUnattachedEdge(EdgeState edge) {
         if (unattachedEdges.remove(edge)) {
-            edge.markAttached();
+            edge.markNotUnattached();
         }
     }
 
     public ComponentState getVersion(ModuleVersionIdentifier id, ComponentIdentifier componentIdentifier) {
         assert id.getModule().equals(this.id);
-        return versions.computeIfAbsent(id, k ->
+        ComponentState componentState = versions.computeIfAbsent(id, k ->
             new ComponentState(idGenerator.nextGraphNodeId(), this, id, componentIdentifier, metaDataResolver)
         );
+
+        // Starting in Gradle 10, the root component's module identity will no longer
+        // be the module identity of the project performing dependency resolution.
+        // In Gradle 10, attempting to resolve the root component using its old module coordinates will no
+        // longer resolve the project component of the project performing resolution, but will
+        // instead attempt to resolve the component from external repositories.
+        if (componentIdentifier instanceof ModuleComponentIdentifier && componentState.isRoot()) {
+            DeprecationLogger.deprecateAction("Depending on the resolving project's module coordinates")
+                .withAdvice("Use a project dependency instead.")
+                .willBecomeAnErrorInGradle10()
+                .withUpgradeGuideSection(9, "module_identity_for_root_component")
+                .nagUser();
+        }
+
+        return componentState;
     }
 
     void addSelector(SelectorState selector, boolean deferSelection) {
@@ -402,7 +402,9 @@ public class ModuleResolveState implements CandidateModule {
     }
 
     void disconnectIncomingEdge(NodeState removalSource, EdgeState incomingEdge) {
+        // Remove the unattached edge first, as clearing the selector may trigger re-selection and mutate the unattached edge
         removeUnattachedEdge(incomingEdge);
+        incomingEdge.clearSelector();
         if (!incomingEdge.isConstraint()) {
             pendingDependencies.decreaseHardEdgeCount();
             if (pendingDependencies.isPending()) {

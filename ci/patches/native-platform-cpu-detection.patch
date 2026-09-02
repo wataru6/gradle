@@ -1,0 +1,12 @@
+--- a/native-platform/src/main/java/net/rubygrapefruit/platform/internal/MutableSystemInfo.java
++++ b/native-platform/src/main/java/net/rubygrapefruit/platform/internal/MutableSystemInfo.java
+@@ -39,8 +39,7 @@
+             // On macOS, the architecture field contains the CPU name, not the architecture
+             if (machineArchitecture.startsWith("Apple")) {
+                 return "arm64";
+-            }
+-            if (machineArchitecture.startsWith("Intel")) {
++            } else if (machineArchitecture.contains("Intel") || machineArchitecture.startsWith("AMD")) {
+                 return "x86_64";
+             }
+         }

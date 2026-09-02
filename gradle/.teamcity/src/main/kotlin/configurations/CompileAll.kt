@@ -3,6 +3,7 @@ package configurations
 import common.Os
 import common.buildScanTagParam
 import common.getBuildScanCustomValueParam
+import common.setArtifactRules
 import model.CIBuildModel
 import model.Stage
 
@@ -26,14 +27,16 @@ class CompileAll(
                 listOf(
                     stage.getBuildScanCustomValueParam(),
                     buildScanTagParam("CompileAll"),
+                    "-Dorg.gradle.java.installations.auto-download=false",
                     "-Porg.gradle.java.installations.auto-download=false",
                 ).joinToString(" "),
         )
 
-        artifactRules =
+        setArtifactRules(
             """$artifactRules
 platforms/core-runtime/base-services/build/generated-resources/build-receipt/org/gradle/build-receipt.properties
-"""
+""",
+        )
     }) {
     companion object {
         fun buildTypeId(model: CIBuildModel) = buildTypeId(model.projectId)

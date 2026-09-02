@@ -81,6 +81,7 @@ class ApplyDefaultConfigurationTest {
                 "GRADLE_RUNNER",
                 "KILL_PROCESSES_STARTED_BY_GRADLE",
                 "CHECK_CLEAN_M2_ANDROID_USER_HOME",
+                "EC2_POST_BUILD",
             ),
             steps.items.map(BuildStep::name),
         )
@@ -190,9 +191,12 @@ class ApplyDefaultConfigurationTest {
             "%additional.gradle.parameters%",
             "--continue $extraParameters -Dscan.tag.Check",
             "-Dscan.tag.PullRequestFeedback -PteamCityBuildId=%teamcity.build.id%",
-            "\"-Porg.gradle.java.installations.paths=$expectedInstallationPaths\"",
+            "-Dorg.gradle.java.installations.auto-download=false",
             "-Porg.gradle.java.installations.auto-download=false",
+            "-Dorg.gradle.java.installations.auto-detect=false",
             "-Porg.gradle.java.installations.auto-detect=false",
+            "\"-Dorg.gradle.java.installations.paths=$expectedInstallationPaths\"",
+            "\"-Porg.gradle.java.installations.paths=$expectedInstallationPaths\"",
         ).joinToString(" ")
     }
 }

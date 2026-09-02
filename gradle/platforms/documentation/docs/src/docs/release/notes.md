@@ -10,39 +10,59 @@
 <meta name="twitter:description" content="We are excited to announce Gradle @version@.">
 <meta name="twitter:image" content="https://gradle.org/images/releases/gradle-default.png">
 
-We are excited to announce Gradle @version@ (released [@releaseDate@](https://gradle.org/releases/)).
+Gradle @version@ has been released ([@releaseDate@](https://gradle.org/releases/)).
 
-Gradle now supports [Java 25](#java-25).
+This patch release includes bug fixes and improvements.
 
-This release introduces new ways to [visualize task graphs](#task-graph) and [inspect project structures](#project-report).
-[Build initialization](#build-init) for Kotlin projects now uses the kotlin-test dependency for more flexible test framework selection.
-Command-line usability is improved with [console enhancements](#cli) and [clearer error messages](#error) for version conflicts.
+The following issues were resolved:
 
-Gradle @version@ introduces enhancements to the [Configuration Cache](#configuration-cache), a new read-only mode optimized for CI workflows, smarter reuse of cache entries when command-line properties change, and better compatibility with customized JVM security policies.
+* [Cannot find testcases from Android Screenshot Test plugin since Gradle 9.3.0](https://github.com/gradle/gradle/issues/36320)
+* [Excluding dependencies from included builds doesn't work in Gradle 9.3.0](https://github.com/gradle/gradle/issues/36331)
+* [ExternalDependency and DependencyConstraint cannot be passed to DependencyResolveDetails#useTarget](https://github.com/gradle/gradle/issues/36359)
+* [Gradle 9.3.0 generate JUnit test result files with wrong name](https://github.com/gradle/gradle/issues/36379)
+* [Build cache cannot handle outputs with non-BMP characters in the filename](https://github.com/gradle/gradle/issues/36387)
+* [Emojis in test names should not break build caching](https://github.com/gradle/gradle/issues/36395)
+* [Non utf-8 c code is no longer buildable](https://github.com/gradle/gradle/issues/36399)
+* [Breaking change in 9.3.0 regarding cross-project dependency manipulation](https://github.com/gradle/gradle/issues/36428)
+* [JUnit3 tests cannot be run with Gradle 9.3.0](https://github.com/gradle/gradle/issues/36451)
+* [Test.setScanForTestClasses(false) causes all junit4 tests to be skipped](https://github.com/gradle/gradle/issues/36508)
 
-This release also includes several [build authoring improvements](#build-authoring), enhancements to the [Antlr](#antlr), [EAR](#ear) and [Publishing plugin](#plugin-publishing), and fixes for [composite builds using `--dry-run`](#dry-run).
+We recommend upgrading to Gradle @version@.
+
+---
+
+This release brings [test reporting improvements](#test-reporting-improvements), including a more detailed HTML test report for nested, parameterized, and suite-based tests, better aggregate reporting, and a new streaming API in TestKit for efficiently reading build output.
+
+It also [enhances build authoring](#build-authoring-improvements) with a new `AttributeContainer.named()` convenience method for more concise attribute configuration.
+
+There are [error and warning reporting improvements](#error-and-warning-reporting-improvements), with Problems API reports now rendered in the console when using `--warning-mode=all`.
+
+Finally, this release addresses two security vulnerabilities:
+
+* [Failure to disable repositories with an unknown host can expose builds to malicious artifacts](https://github.com/gradle/gradle/security/advisories/GHSA-w78c-w6vf-rw82)
+* [Failure to disable repositories failing to answer can expose builds to malicious artifacts](https://github.com/gradle/gradle/security/advisories/GHSA-mqwm-5m85-gmcv)
+
+Review the advisories above for mitigation strategies if an immediate upgrade is not feasible.
 
 We would like to thank the following community members for their contributions to this release of Gradle:
-[Eng Zer Jun](https://github.com/Juneezee),
-[EunHyunsu](https://github.com/ehs208),
-[Gaëtan Muller](https://github.com/MGaetan89),
-[HeeChul Yang](https://github.com/yangchef1),
+[Adam](https://github.com/adam-enko),
+[Adam](https://github.com/aSemy),
+[Aharnish Solanki](https://github.com/Ahar28),
+[Andrzej Zabost](https://github.com/azabost),
+[Björn Kautler](https://github.com/Vampire),
+[Boris Petrov](https://github.com/boris-petrov),
 [Jendrik Johannes](https://github.com/jjohannes),
-[Johnny Lim](https://github.com/izeye),
-[Junho Lee](https://github.com/junstory),
-[Kirill Gavrilov](https://github.com/gavvvr),
-[Matthew Haughton](https://github.com/3flex),
-[Na Minhyeok](https://github.com/NaMinhyeok),
+[Kamil Krzywanski](https://github.com/kamilkrzywanski),
+[KANAKALA SAI KIRAN](https://github.com/saikirankanakala),
+[Megmeehey](https://github.com/Megmeehey),
+[NurmukhametovAlexey](https://github.com/NurmukhametovAlexey),
 [Philip Wedemann](https://github.com/hfhbd),
-[Philipp Schneider](https://github.com/p-schneider),
-[Pradyumna C](https://github.com/pradyumnac26),
-[r-a-sattarov](https://github.com/r-a-sattarov),
-[Ryszard Perkowski](https://github.com/usultis),
-[Sebastian Schuberth](https://github.com/sschuberth),
-[SebastianHeil](https://github.com/SebastianHeil),
-[Staffan Al-Kadhimi](https://github.com/stafak),
-[winfriedgerlach](https://github.com/winfriedgerlach),
-[Xin Wang](https://github.com/scaventz).
+[Piotr Kubowicz](https://github.com/pkubowicz),
+[Samay Kumar](https://github.com/samayk27),
+[Shin Minjun](https://github.com/minjun011026),
+[Stefan Oehme](https://github.com/oehme),
+[Vincent Potuček](https://github.com/Pankraz76),
+[Yongshun Ye](https://github.com/ShreckYe).
 
 Be sure to check out the [public roadmap](https://roadmap.gradle.org) for insight into what's planned for future releases.
 
@@ -56,453 +76,293 @@ Switch your build to use Gradle @version@ by updating the [wrapper](userguide/gr
 
 See the [Gradle 9.x upgrade guide](userguide/upgrading_version_9.html#changes_@baseVersion@) to learn about deprecations, breaking changes, and other considerations when upgrading to Gradle @version@.
 
-For Java, Groovy, Kotlin, and Android compatibility, see the [full compatibility notes](userguide/compatibility.html).
+For Java, Groovy, Kotlin, and Android compatibility, see the [full compatibility notes](userguide/compatibility.html).   
 
 ## New features and usability improvements
 
-<a name="java-25"></a>
-### Support for Java 25
+### Test reporting improvements
 
-With this release, Gradle supports [Java 25](https://openjdk.org/projects/jdk/25/).
-This means you can now use Java 25 for the [daemon](userguide/gradle_daemon.html) in addition to [toolchains](userguide/toolchains.html).
-Third-party tool compatibility with Java 25 may still be limited.
-If you're using the [Tooling API](userguide/tooling_api.html), you’ll need to enable native access at startup due to its use of JNI.
-See [JEP 472](https://openjdk.org/jeps/472) for details.
+Gradle provides a [rich set of features and abstractions](userguide/java_testing.html) for testing JVM code, along with test reports to display results.
 
-See [the compatibility documentation](userguide/compatibility.html#java_runtime) for more details.
+#### Test results reporting
 
-<a name="task-graph"></a>
-### Task graph visualization
+The [HTML test report](userguide/java_testing.html#test_reporting) generated by the `test` task, [`TestReport`](javadoc/org/gradle/api/tasks/testing/TestReport.html), and other [`AbstractTestTask`](javadoc/org/gradle/api/tasks/testing/AbstractTestTask.html) usages now presents test results in a clearer structure that reflects how tests are defined:
 
-Gradle offers a new way to visualize [task dependencies](userguide/build_lifecycle.html#task_graph) without executing the tasks.
+![test-results-reporting.png](release-notes-assets/test-results-reporting.png)
 
-Enable it with the `--task-graph` option:
+This results from Gradle adopting the incubating [Test Event Reporting API](userguide/test_reporting_api.html) internally.
 
-```console
-./gradlew root r2 --task-graph
-```
+In the following sections, "Suite" refers specifically to the suite features of JUnit 4, JUnit Jupiter, and TestNG while "Container" refers to a general grouping of tests, such as a class.
 
-This will print a textual tree-style visualization of the task graph for the specified tasks:
+##### Nested test changes
+
+For JUnit 4 and JUnit Jupiter, nested test classes are now shown nested under their enclosing class in the HTML Test Report.
+
+For example, if you had an `OuterClass` with an `InnerClass` nested inside it, it would previously be shown as:
 
 ```text
-Tasks graph for: root r2
-+--- :root (org.gradle.api.DefaultTask)
-|    \--- :middle (org.gradle.api.DefaultTask)
-|         +--- :leaf1 (org.gradle.api.DefaultTask)
-|         \--- :leaf2 (org.gradle.api.DefaultTask, disabled)
-\--- :root2 (org.gradle.api.DefaultTask)
-    +--- :leaf1 (*)
-    |--- other build task :included:fromIncluded (org.gradle.api.DefaultTask)
-    \--- :leaf4 (org.gradle.api.DefaultTask, finalizer)
-         \--- :leaf3 (org.gradle.api.DefaultTask)
-
-
-(*) - details omitted (listed previously)
++ OuterClass$InnerClass
+|-- someTestMethodInInnerClass
 ```
 
-This feature provides a quick overview of the task graph, helping users understand the dependencies between tasks without running them.
-
-This feature is _incubating_ and may change in future versions.
-
-<a name="project-report"></a>
-### Enhanced Project Report
-
-The [Project Report](userguide/project_report_plugin.html) has been updated to show the physical locations of projects in the file system, as well as their logical build paths:
+It will now be reported in the HTML Test Report as:
 
 ```text
-------------------------------------------------------------
-Root project 'avoidEmptyProjects-do'
-------------------------------------------------------------
-
-Location: /usr/jsmith/projects/avoidEmptyProjects-do
-Description: Example project to demonstrate Gradle's project hierarchy and locations
-
-Project hierarchy:
-
-Root project 'avoidEmptyProjects-do'
-+--- Project ':app'
-\--- Project ':my-web-module'
-
-Project locations:
-
-project ':app' - /app
-project ':my-web-module' - /subs/web/my-web-module
-
-To see a list of the tasks of a project, run gradle <project-path>:tasks
-For example, try running gradle :app:tasks
++ OuterClass
+|-+ InnerClass (or OuterClass$InnerClass for JUnit 4)
+  |-- someTestMethodInInnerClass
 ```
 
-This helps authors better understand the structure of hierarchical builds that use non-standard project directories.
+With multiple inner classes:
 
-<a name="build-init"></a>
-### Build initialization uses the `kotlin-test` dependency for Kotlin projects
-
-The [`init` task](userguide/build_init_plugin.html) generates Kotlin project builds using the `org.jetbrains.kotlin:kotlin-test` dependency instead of the more specific `kotlin-test-junit5`.
-This change allows the test framework variant (e.g., JUnit5, JUnit4, TestNG) to be inferred automatically based on the configured test runner.
-
-For more details, see the [Kotlin Gradle Configuration documentation](https://kotlinlang.org/docs/gradle-configure-project.html#set-dependencies-on-test-libraries) and the `kotlin-test` API reference.
-
-<a name="cli"></a>
-### CLI improvements
-
-Most developers interact with Gradle through the [command-line interface](userguide/command_line_interface.html).
-This release introduces several enhancements to improve usability and feedback in the terminal.
-
-#### Rich console off-screen line indicator
-
-When a build produces more console output than fits in the terminal, for example, due to parallel task execution, verbose logging, or frequent progress updates, the [ `rich` console](userguide/command_line_interface.html#sec:rich_console) shows a helpful status line indicating how many lines are not currently visible:
-
-```console
-> (2 lines not showing)
+```text
++ OuterClass
+|-+ InnerClass1 (or OuterClass$InnerClass1 for JUnit 4)
+  |-- someTestMethodInInnerClass1
+  + InnerClass2 (or OuterClass$InnerClass2 for JUnit 4)
+  |-- someTestMethodInInnerClass2
 ```
 
-![Console Shows Off Screen Lines](release-notes-assets/off-screen-lines.gif)
+The XML report remains the same, nested classes are still written as `TEST-OuterClass$InnerClass.xml`.
 
-#### Plain console with colors
+##### Parameterized test changes
 
-A new value for the [`--console` command line option](userguide/command_line_interface.html#sec:command_line_customizing_log_format) called `colored` is available:
+Parameterized tests now create a suite that contains all the parameterized test cases for a given method.
 
-```console
-./gradlew [...] --console=colored
+For example, if you had a class `TestClass` with two parameterized `paramTest1/2` methods, it would previously be shown as:
+
+```text
++ TestClass
+|-- paramTest1[0]
+|-- paramTest1[1]
+|-- paramTest1[2]
+|-- paramTest2[a]
+|-- paramTest2[b]
+|-- paramTest2[c]
 ```
 
-The new `colored` console mode provides color highlighting without rich features like progress bars.
-This makes it easier to spot errors and warnings in plain logs, especially in CI environments or
-simple terminals where rich console output may not render well.
+It will now be reported in the HTML Test Report as:
 
-![Console Shows Rich Color Output](release-notes-assets/colored-console.gif)
+```text
++ TestClass
+|-+ paramTest1
+  |-- paramTest1[0]
+  |-- paramTest1[1]
+  |-- paramTest1[2]
+|-+ paramTest2
+  |-- paramTest2[a]
+  |-- paramTest2[b]
+  |-- paramTest2[c]
+```
 
-<a name="error"></a>
+##### Suite changes
+
+Suites now contain the classes they run, rather than those classes being shown as siblings.
+
+For example, if you had a suite `AllTests` that ran `TestClass1` and `TestClass2`, it would previously be shown as:
+
+```text
++ AllTests
++ TestClass1
+|-- someTestMethodInClass1
++ TestClass2
+|-- someTestMethodInClass2
+```
+
+It will now be reported in the HTML Test Report as:
+
+```text
++ AllTests
+|-+ TestClass1
+  |-- someTestMethodInClass1
+|-+ TestClass2
+  |-- someTestMethodInClass2
+```
+
+In the XML report, only the class report is emitted (`TEST-SomeTestClass.xml`).
+
+##### Package suite changes
+
+Packages are no longer represented as containers in the HTML report.
+
+For example, if you had classes org.example.FirstTest and org.example.SecondTest, it would previously be shown as:
+
+```text
++ org.example
+  |-- FirstTest
+  |-- SecondTest
+```
+
+It will now be reported in the HTML Test Report as:
+
+```text
++ org.example.FirstTest
++ org.example.SecondTest
+```
+
+There are two main reasons for this change:
+
+1. With support for non-class-based testing, Gradle cannot reliably determine if a container corresponds to a class, so synthesizing a package container can be misleading.
+2. This behavior now aligns more closely with how testing frameworks and IDEs group tests.
+
+##### Test standard output/error changes
+
+Standard output and standard error (collectively, "output") are no longer combined from individual tests to the container/class level.
+Instead, the output stays attached to the individual test that produced it:
+
+![test-results-test.png](release-notes-assets/test-results-test.png)
+
+This makes it easier to locate output that is relevant to a specific test.
+
+![test-results-standard-output.png](release-notes-assets/test-results-standard-output.png)
+
+`@Before` and `@After` class output is now associated with the correct class in JUnit 4, JUnit Jupiter, and TestNG (starting with TestNG 6.9.13.3).
+`@Before`  and `@After` suite or container output is now associated with the correct suite or container for JUnit 4 (starting with JUnit 4.13), JUnit Jupiter, and TestNG (starting with TestNG 6.19.13.3):
+
+![test-results-standard-error.png](release-notes-assets/test-results-standard-error.png)
+
+#### Aggregate report changes
+
+The [Test Report Aggregation Plugin](userguide/test_report_aggregation_plugin.html) provides tasks and configurations used to aggregate the results of multiple [Test](javadoc/org/gradle/api/tasks/testing/Test.html) task invocations into a single HTML report.   
+This report, which can also be generated manually with [`TestReport`](javadoc/org/gradle/api/tasks/testing/TestReport.html), now supports overlapping test structures.
+
+For example, when a suite with the same name exists in multiple subprojects:
+
+* `application` subproject has an `AdderTest`
+* `direct` subproject has an `AdderTest` and a `MultiplierTest`
+* `transitive` subproject has an `AdderTest` (which fails) and a `PowerizeTest`
+
+Previously, the report looked like this when a failure occurred:
+
+![old-aggregate-report.png](release-notes-assets/old-aggregate-report.png)
+
+Now, each individual report source is represented as a separate tab.
+To see the tests from a specific source, select its corresponding tab:
+
+![new-aggregate-report.png](release-notes-assets/new-aggregate-report.png)
+
 ### Error and warning reporting improvements
 
 Gradle provides a rich set of [error and warning messages](userguide/logging.html) to help you understand and resolve problems in your build.
 
-#### Improved error message for version constraint conflicts
+#### Simple console rendering for Problem Reports
 
-Previously, when a [version constraint conflict](userguide/graph_resolution.html#sec:conflict-resolution) occurred, Gradle produced a verbose and hard-to-read error message, especially when transitive dependencies were involved.
+The [Problems API](userguide/reporting_problems.html) provides structured feedback on build issues, helping developers and tools like IDEs identify and resolve warnings, errors, or deprecations during configuration or runtime.
 
-It also was formatted in a way that was difficult to comprehend, especially when constraints involved in the conflict were added by transitive dependencies:
+Previously, a limitation was that the problem report was linked to in the console output, but the problems themselves were not displayed:
 
-```text
-> Could not resolve org:foo:3.2.
-  Required by:
-      root project 'test'
-   > Cannot find a version of 'org:foo' that satisfies the version constraints:
-        Dependency path: 'root project :' (conf) --> 'org:bar:2.0' (runtime) --> 'org:foo:3.1'
-        Constraint path: 'root project :' (conf) --> 'org:platform:1.1' (platform) --> 'org:foo:{strictly 3.1.1; reject 3.1 & 3.2}'
-        Constraint path: 'root project :' (conf) --> 'org:foo:3.2'
-        Constraint path: 'root project :' (conf) --> 'org:baz:3.0' (runtime) --> 'org:foo:3.3'
-        Constraint path: 'root project :' (conf) --> 'org:other:3.0' (runtime) --> 'org:foo:3.3'
+```bash
+$ ./gradlew :test --warning-mode=all
+
+> Configure project :
+[Incubating] Problems report is available at: file:///Users/user/test-report-aggregation-sample/build/reports/problems/problems-report.html
 ```
 
-This release introduces a cleaner, more focused error message that focuses attention on the conflicting versions required by the constraints involved in the conflict:
+In this release, we've added basic console integration.
+Relevant problems in the report are now rendered in the console output when you use `--warning-mode=all`:
 
-```text
-> Could not resolve org:foo.
-  Required by:
-      root project 'mec0k'
-   > Component is the target of multiple version constraints with conflicting requirements:
-     3.1.1 - directly in 'org:platform:1.1' (platform)
-     3.2
-     3.3 - transitively via 'org:baz:3.0' (runtime) (1 other path to this version)
+```bash
+$ ./gradlew :test --warning-mode=all
+
+> Configure project :
+Build file '/Users/user/Downloads/test-report-aggregation-sample/build.gradle': line 16
+The Wrapper.getAvailableDistributionTypes method has been deprecated...
+        at build_5teuix0v7qf7ou93kgnmvnicp.run(/Users/user/test-report-aggregation-sample/build.gradle:16)
+        (Run with --stacktrace to get the full stack trace of this deprecation warning.)
+[Incubating] Problems report is available at: file:///Users/user/test-report-aggregation-sample/build/reports/problems/problems-report.html
 ```
 
-The improved error message makes dependency version conflicts much easier to diagnose by:
+#### Clearer explanation for worker process exit codes
 
-* Clearly states that the failure is due to a version constraint conflict for a component, not just an inability to find a suitable version in the configured repositories.
-* Lists each conflicting version constraint involved in the resolution failure.
-* Identifies where each constraint is declared (e.g., in the project, a direct dependency, a transitive dependency, or via dependency locking) without printing full dependency paths, which are often long and hard to read. Full paths remain available in the dependency insight report.
-* Reports how many resolution paths lead to each constraint, but only prints the first one, which is typically enough to understand the issue.
-* Omits non-strict dependency declarations, which don’t contribute to the conflict and only add noise.
+Gradle now provides a short explanation when a [worker process](userguide/gradle_daemon.html#understanding_daemon) exits with a code that typically indicates it was killed by the operating system.
 
-Additionally, the error message concludes with a suggested [`dependencyInsight` command](userguide/viewing_debugging_dependencies.html#sec:identifying-reason-dependency-selection) for further investigation, giving you an actionable next step to explore the conflict in detail.
+Previously, you would see:
 
-<a name="configuration-cache"></a>
-### Configuration Cache improvements
-
-The [Configuration Cache](userguide/configuration_cache.html) improves build time by caching the result of the configuration phase and reusing it for subsequent builds.
-This feature can significantly improve build performance.
-
-#### Configuration Cache read-only mode
-
-This release introduces a new read-only mode of operation for the [Configuration Cache](userguide/configuration_cache_enabling.html#config_cache:usage:read_only).
-In this mode, Gradle reuses existing cache entries (on a hit) but does not create new ones.
-
-This may speed up CI builds that do not contribute their results to caches.
-For example, a typical CI configuration might have main branch builds populate caches, while pull request builds only reuse them.
-In such cases, enabling read-only mode can improve PR build times when the overhead of writing new cache entries outweighs the benefit of faster parallel task execution within the same project.
-
-To enable the feature, specify the following flag in the command line when invoking Gradle:
-
-```
-./gradlew --configuration-cache -Dorg.gradle.configuration-cache.read-only=true
+```bash
+> Process 'Gradle Worker Daemon 87' finished with non-zero exit value 137
 ```
 
-For more information, see [Making the Configuration Cache Read-Only](userguide/configuration_cache_enabling.html#config_cache:usage:read_only).
+Now, Gradle adds a helpful hint based on the value of the exit code:
 
-#### Improved hit rates for changes of `-P` command-line properties
-
-Previously, changing any `-P` [project property](userguide/build_environment.html#sec:project_properties) on the command line invalidated the [Configuration Cache](userguide/configuration_cache.html), even if the property wasn't used during the configuration phase.
-
-Consider the following Kotlin DSL example:
-
-```kotlin
-tasks.register("echo") {
-    val value = providers.gradleProperty("value")
-    doLast {
-        println("value: ${value.orNull}")
-    }
-}
+```bash
+> Process 'Gradle Worker Daemon 87' finished with non-zero exit value 137 
+(this value may indicate that the process was terminated with the SIGKILL 
+signal, which is often caused by the system running out of memory)
 ```
 
-With previous versions of Gradle, multiple executions of the `echo` task with different `-P` arguments were unable to reuse the Configuration Cache:
+This makes it easier to understand failures caused by conditions such as running out of memory.
 
-```console
-$ ./gradlew --configuration-cache echo -Pvalue=1
-
-Calculating task graph as no cached configuration is available for tasks: echo
-
-> Task :echo
-value: 1
-
-...
-Configuration cache entry stored.
-```
-
-```console
-$ ./gradlew --configuration-cache echo -Pvalue=2
-
-Calculating task graph as configuration cache cannot be reused because the set of Gradle properties has changed: the value of 'value' was changed.
-
-> Task :echo
-value: 2
-
-...
-Configuration cache entry stored.
-```
-
-By detecting that the `value` property is never realized during the configuration phase, this release can reuse the configuration cache and make more scenarios run faster.
-
-```console
-$ ./gradlew --configuration-cache echo -Pvalue=1
-
-Calculating task graph as no cached configuration is available for tasks: echo
-
-> Task :echo
-value: 1
-
-...
-Configuration cache entry stored.
-```
-
-```console
-$ ./gradlew --configuration-cache echo -Pvalue=2
-
-Reusing configuration cache.
-
-> Task :echo
-value: 2
-
-...
-Configuration cache entry reused.
-```
-
-Additionally, the [Configuration Cache report](userguide/configuration_cache_debugging.html#config_cache:troubleshooting) will include properties used during the configuration phase under the _Build configuration inputs_ tab.
-
-#### Encryption honors the JVM’s default keystore type
-
-Previously, Gradle always used the `PKCS12` keystore format for its encryption keystore (used by the [Configuration Cache](userguide/configuration_cache_requirements.html#config_cache:secrets)), ignoring the JVM’s default setting.
-This caused problems for users running Gradle on JDKs with customized Java security policies, like those using FIPS-compliant mode with Bouncy Castle security provider.
-
-Starting with this release, Gradle now honors the JVM’s default keystore type, as long as it supports storing symmetric keys.
-If the default keystore is a known format that only supports asymmetric keys, Gradle will automatically fall back to `PKCS12`.
-This makes Gradle more compatible with secure or customized JVM environments, while ensuring safe defaults for everyone else.
-
-<a name="build-authoring"></a>
 ### Build authoring improvements
 
 Gradle provides [rich APIs](userguide/getting_started_dev.html) for plugin authors and build engineers to develop custom build logic.
 
-#### New `AttributeContainer.addAllLater()`
+#### New `AttributeContainer.named()` method
 
-A new method, [`addAllLater`](javadoc/org/gradle/api/attributes/AttributeContainer.html#addAllLater(org.gradle.api.attributes.AttributeContainer)), has been added to the [`AttributeContainer`](javadoc/org/gradle/api/attributes/AttributeContainer.html) API.
-It allows all attributes from one container to be lazily copied into another.
+An [`AttributeContainer`](javadoc/org/gradle/api/attributes/AttributeContainer.html) stores attributes that Gradle uses to pick the right variant of a dependency during [resolution](userguide/graph_resolution.html#sec:variant-selection).  
+This release introduces the new convenience method on [`AttributeContainer.named()`](javadoc/org/gradle/api/attributes/AttributeContainer.html#named\(java.lang.Class,java.lang.String).  
+This method can create attribute values directly from the container without requiring the use of the [`ObjectFactory`](userguide/service_injection.html#objectfactory).
 
-Here’s an example of how it works:
-
-```kotlin
-val color = Attribute.of("color", String::class.java)
-val shape = Attribute.of("shape", String::class.java)
-
-val foo = configurations.create("foo").attributes
-foo.attribute(color, "green")
-
-val bar = configurations.create("bar").attributes
-bar.attribute(color, "red")
-bar.attribute(shape, "square")
-assert(bar.getAttribute(color) == "red")    // `color` is originally red
-
-bar.addAllLater(foo)
-assert(bar.getAttribute(color) == "green")  // `color` gets overwritten
-assert(bar.getAttribute(shape) == "square") // `shape` does not
-
-foo.attribute(color, "purple")
-bar.getAttribute(color) == "purple"         // addAllLater is lazy
-
-bar.attribute(color, "orange")
-assert(bar.getAttribute(color) == "orange") // `color` gets overwritten again
-assert(bar.getAttribute(shape) == "square") // `shape` remains the same
-```
-
-This API is particularly useful for cases where attributes need to be configured in a deferred or conditional way, such as in plugin development or complex dependency resolution logic.
-
-#### Type-safe accessors for `compileOnly` plugin dependencies in precompiled Kotlin scripts
-
-Previously, plugins added via a `compileOnly` dependency could not be applied or configured using [precompiled Kotlin script plugins](userguide/implementing_gradle_plugins_precompiled.html).
-Precompiled Kotlin script plugins can use [type-safe accessors](userguide/kotlin_dsl.html#type-safe-accessors) for plugins added via `compileOnly` dependencies.
-
-For example, the `buildSrc/build.gradle.kts` file below declares a `compileOnly` dependency on a third-party plugin:
+This method makes attribute assignment more concise while preserving the same semantics as creating a named value via the `ObjectFactory`:
 
 ```kotlin
-plugins {
-    `kotlin-dsl`
-}
-
-dependencies {
-    compileOnly("com.android.tools.build:gradle:x.y.z")
-}
-```
-
-A precompiled convention plugin in `buildSrc/src/main/kotlin/my-convention-plugin.gradle.kts` can now apply the plugin and use type-safe accessors to configure it:
-
-```kotlin
-plugins {
-    id("com.android.application")
-}
-
-android {
-    // The accessor to the `android` extension registered by the Android plugin is now available
-}
-```
-
-This improvement makes it easier to use and configure third-party plugins in custom build logic.
-
-#### New `Gradle.getBuildPath()`
-
-This release introduces a new method on the [`Gradle`](javadoc/org/gradle/api/invocation/Gradle.html) interface called [`getBuildPath()`](javadoc/org/gradle/api/invocation/Gradle.html#getBuildPath()).
-It returns the path of the build relative to the root of the build tree:
-
-* For the root build, it returns `:`.
-* For included builds, it returns their path relative to the root build (e.g., `:my-included-build`).
-
-This is equivalent to what [`BuildIdentifier.getBuildPath()`](javadoc/org/gradle/api/artifacts/component/BuildIdentifier.html#getBuildPath()) provides, but it’s now available directly from the `Gradle` instance, making it easier to determine which build a given project belongs to.
-
-For example, you can get the build path of a build that a given project belongs to.
-
-```kotlin
-val project: Project = getProjectInstance()
-val buildPath: String = project.gradle.buildPath
-```
-
-This complements existing APIs like [`Project.path`](javadoc/org/gradle/api/Project.html#getPath()).
-
-#### Declare distribution repository in `MavenPublication.distributionManagement{}`
-
-You can explicitly declare the distribution repository in the [POM](userguide/publishing_maven.html#sec:modifying_the_generated_pom) when publishing a [Maven publication](userguide/publishing_maven.html).
-
-For example, to include GitHub Packages as the [distribution repository](javadoc/org/gradle/api/publish/maven/MavenPomDistributionManagement.html#repository(org.gradle.api.Action)) in the generated POM:
-
-```kotlin
-plugins {
-  id("maven-publish")
-}
-
-publications.withType<MavenPublication>().configureEach {
-  pom {
-    distributionManagement {
-      repository {
-        id = "github"
-        name = "GitHub OWNER Apache Maven Packages"
-        url = "https://maven.pkg.github.com/OWNER/REPOSITORY"
-      }
-    }
-  }
-}
-```
-
-<a name="antlr"></a>
-### Antlr plugin improvements
-
-The [Antlr plugin](userguide/antlr_plugin.html) integrates the [ANTLR](https://www.antlr.org/) parser generator into builds, automatically generating Java sources from grammar definitions for compilation.
-
-#### Simpler target package configuration for Antlr 4
-
-The [`AntlrTask`](userguide/antlr_plugin.html) class supports a new [`packageName`](javadoc/org/gradle/api/plugins/antlr/AntlrTask.html#getPackageName()) property for setting the target package of generated code when using Antlr 4.
-Previously, specifying the `-package` argument also required manually configuring the output directory to match the package structure.
-
-The new `packageName` property simplifies this by automatically setting both the `-package` argument and the correct output directory based on the package.
-
-Setting the `-package` argument directly is now deprecated and will become an error in Gradle 10.0.0.
-
-```kotlin
-tasks.named("generateGrammarSource").configure {
-    // Set the target package for generated code
-    packageName = "com.example.generated"
-}
-```
-
-This option is only available when using Antlr 4 and will fail if used with earlier versions.
-
-#### Antlr-generated sources are automatically tracked
-
-In previous Gradle versions, if the [`Antlr`](userguide/antlr_plugin.html)-generated sources directory was changed, the associated Java source set was not updated automatically.
-This required manual updates to ensure the source set included the new directory.
-
-With this release, the generated sources directory is now automatically tracked.
-When the output directory changes, the Java source set is updated accordingly.
-Additionally, a task dependency is created between the source generation task and the source set, so tasks that consume the source set will correctly depend on Antlr code generation.
-
-<a name="ear"></a>
-### Ear plugin improvements
-
-The [EAR plugin](userguide/ear_plugin.html) facilitates the assembly of Enterprise Archive (EAR) files for Java EE applications, packaging modules and deployment descriptors into a standard distributable format.
-
-#### Support for Jakarta EE 11 deployment descriptors
-
-
-It is possible to generate valid deployment descriptors for [Jakarta EE 11](https://jakarta.ee/release/11/) by specifying the corresponding version in the `deploymentDescriptor` instead of having to use a custom descriptor file.
-
-```kotlin
-tasks.ear {
-    deploymentDescriptor {  // custom entries for application.xml:
-        version = "11"
+configurations.resolvable("foo") {
+    attributes {
+        // Before: 
+        attribute(Usage.USAGE_ATTRIBUTE, objects.named("red"))
+        
+        // After:
+        attribute(Usage.USAGE_ATTRIBUTE, named("red"))
     }
 }
 ```
 
-<a name="dry-run"></a>
-### Fixed `--dry-run` behavior in Composite Builds
+#### Stream TestKit output
 
-Gradle now correctly respects [`--dry-run`](userguide/command_line_interface.html#sec:command_line_execution_options) option in [Composite Builds](userguide/composite_builds.html), ensuring that tasks are not executed during the execution phase of included builds.
+In Gradle’s [TestKit](userguide/test_kit.html), [`BuildResult`](javadoc/org/gradle/testkit/runner/BuildResult.html) is the object that represents the outcome of a test build you ran with [GradleRunner](javadoc/org/gradle/testkit/runner/GradleRunner.html).  
+[`BuildResult`](javadoc/org/gradle/testkit/runner/BuildResult.html) now offers a new method for accessing the build console output efficiently, especially for builds that produce a large volume of logs.
 
-Note that tasks from some included builds may still be executed during configuration time, as part of their configuration logic.
+[`BuildResult.getOutput()`](javadoc/org/gradle/testkit/runner/BuildResult.html#getOutput\(\)) returns a `String` with the full build console output.   
+This can use large amounts of memory for builds with extensive logs.
 
-This restores expected behavior and makes `--dry-run` safer for previewing task execution plans across composite builds.
+A new [`BuildResult.getOutputReader()`](javadoc/org/gradle/testkit/runner/BuildResult.html#getOutputReader\(\)) method is available, returning a `BufferedReader` for streaming the build output incrementally. This can help reduce memory pressure in TestKit tests.
 
-<a name="plugin-publishing"></a>
-### Publishing plugin improvements
+Ensure you close the `BufferedReader` after use.   
+We recommend the standard Java try-with-resources pattern for this:
 
-Version 2.0.0 of the [Plugin Publishing plugin](https://plugins.gradle.org/plugin/com.gradle.plugin-publish/2.0.0) has been released.
+```java
+void testProject() {
+    BuildResult buildResult = GradleRunner.create()
+        .withProjectDir(File("test-project"))
+        .withArguments(":build", "--info")
+        .build();
 
-This release adds compatibility with the Configuration Cache.
-Note that the `signing` task only supports the Configuration Cache starting with Gradle 8.1.
-For full compatibility, you’ll need Gradle 8.1.1 or later for signed publications.
+    try (BufferedReader outputReader = buildResult.getOutputReader()) {
+        List<String> logLines = outputReader.lines()
+            .filter(line -> line.contains("example build message"))
+            .collect(Collectors.toList());
+        // do something with the log lines...
+    }
+}
+```
 
-All configuration properties now use the [Provider API](javadoc/org/gradle/api/provider/Provider.html).
-Most builds won’t be affected, but you may need to adjust your scripts if you rely on advanced configurations.
+### Publishing signatures for distributions
 
-Support for older Gradle versions has been removed.
-The minimum supported version is now 7.4. Bundled dependencies have also been updated.
+Gradle now publishes ASCII-armored `.asc` signature files for all distribution ZIPs, alongside the existing `.sha256` [checksum](https://gradle.org/release-checksums/) files.
+
+These PGP signatures allow users and build systems to verify that a downloaded Gradle distribution was produced by the Gradle team and has not been tampered with, improving supply-chain integrity and enabling stronger verification workflows.
+
+For details on verifying Gradle distributions and JARs, see the [Signing key for Gradle artifacts](https://gradle.org/keys/) page.
+
+### Dependency repositories can be disabled and skipped for more reasons
+
+When Gradle fails to retrieve information from a repository after multiple retries or specific fatal errors, the repository will no longer be checked for the remainder of the build.
+This will usually fail dependency resolution because Gradle will not continue to the next repository in the list unless told otherwise.
+
+This behavior ensures reproducibility.
+
+In this release, more failures will cause the repository to be disabled, such as an incorrect hostname.
+
+See [the documentation](userguide/graph_resolution.html#sec:repository-disabling) for details, including ways to continue resolution even if a repository is disabled.
 
 ## Promoted features
 
@@ -511,7 +371,30 @@ See the User Manual section on the "[Feature Lifecycle](userguide/feature_lifecy
 
 The following are the features that have been promoted in this Gradle release.
 
-* [`getDependencyFactory()`](javadoc/org/gradle/api/Project.html#getDependencyFactory()) in `Project`
+* [`useFileSystemPermissions()`](javadoc/org/gradle/api/tasks/bundling/AbstractArchiveTask.html#useFileSystemPermissions()) in `AbstractArchiveTask`
+
+## Documentation and training
+
+### User Manual
+
+The [Plugin Development](userguide/init_scripts.html) section has been updated with clearer explanations and coded examples of init scripts and [Init Plugins](userguide/init_scripts.html#sec:init_plugins), including when to use each.
+
+### Best Practices
+
+The following best practices have been added in this Gradle release:
+
+* [Use Convention Plugins for Common Build Logic](userguide/best_practices_structuring_builds.html#use_convention_plugins)
+* [Validate Gradle wrapper JAR checksum](userguide/best_practices_security.html#validate_wrapper_checksum)
+
+### Training
+
+The following course is now available:
+
+* [Introduction to Gradle for Build Engineers](https://dpeuniversity.gradle.com/app/courses/03256bfb-c0b8-4402-9af0-377e90dab72e)
+
+The following learning path is now available:
+
+* [Introduction to Gradle](https://dpeuniversity.gradle.com/app/learning_paths/1a2955ed-499e-45e3-af54-9babd8427972)
 
 ## Fixed issues
 

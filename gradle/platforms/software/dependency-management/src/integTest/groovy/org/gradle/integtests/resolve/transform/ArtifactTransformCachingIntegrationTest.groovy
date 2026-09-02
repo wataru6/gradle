@@ -24,6 +24,7 @@ import org.gradle.integtests.fixtures.ToBeFixedForConfigurationCache
 import org.gradle.integtests.fixtures.build.BuildTestFile
 import org.gradle.integtests.fixtures.cache.FileAccessTimeJournalFixture
 import org.gradle.integtests.fixtures.executer.GradleContextualExecuter
+import org.gradle.integtests.fixtures.executer.IntegrationTestBuildContext
 import org.gradle.internal.reflect.validation.ValidationMessageChecker
 import org.gradle.test.fixtures.Flaky
 import org.gradle.test.fixtures.file.LeaksFileHandles
@@ -107,7 +108,7 @@ class ArtifactTransformCachingIntegrationTest extends AbstractHttpDependencyReso
         setupProjectInDir(projectDir2)
         executer.requireIsolatedDaemons()
         executer.beforeExecute {
-            if (!GradleContextualExecuter.embedded) {
+            if (!IntegrationTestBuildContext.embedded) {
                 executer.withArgument("-D$REUSE_USER_HOME_SERVICES=true")
             }
         }
@@ -542,7 +543,7 @@ class ArtifactTransformCachingIntegrationTest extends AbstractHttpDependencyReso
                     identifier = "2"
                 }
                 task resolve {
-                    dependsOn(resolveHash, resolveSize)
+                    dependsOn(tasks.resolveHash, tasks.resolveSize)
                 }
             }
 
@@ -652,7 +653,7 @@ class ArtifactTransformCachingIntegrationTest extends AbstractHttpDependencyReso
                     identifier = "2"
                 }
                 task resolve {
-                    dependsOn(resolveSize, resolveHash)
+                    dependsOn(tasks.resolveSize, tasks.resolveHash)
                 }
             }
 
@@ -731,13 +732,13 @@ class ArtifactTransformCachingIntegrationTest extends AbstractHttpDependencyReso
                 task resolve2(type: Resolve) {
                     identifier = "2"
                 }
-                configure([resolve1, resolve2]) {
+                configure([tasks.resolve1, tasks.resolve2]) {
                     artifacts = configurations.compile.incoming.artifactView {
                         attributes { it.attribute(artifactType, 'value') }
                     }.artifacts
                 }
                 task resolve {
-                    dependsOn(resolve1, resolve2)
+                    dependsOn(tasks.resolve1, tasks.resolve2)
                 }
             }
 
@@ -852,7 +853,7 @@ class ArtifactTransformCachingIntegrationTest extends AbstractHttpDependencyReso
                     identifier = "2"
                 }
                 task resolve {
-                    dependsOn(resolveSize, resolveHash)
+                    dependsOn(tasks.resolveSize, tasks.resolveHash)
                 }
             }
 
@@ -1324,7 +1325,7 @@ class ArtifactTransformCachingIntegrationTest extends AbstractHttpDependencyReso
                     destinationDirectory = buildDir
                 }
                 artifacts {
-                    compile jar1
+                    compile tasks.jar1
                 }
             }
 
@@ -1371,7 +1372,7 @@ class ArtifactTransformCachingIntegrationTest extends AbstractHttpDependencyReso
                     destinationDirectory = buildDir
                 }
                 artifacts {
-                    compile jar1
+                    compile tasks.jar1
                 }
             }
 
@@ -2026,7 +2027,7 @@ resultsFile:
                     }.artifacts
                 }
                 task resolve {
-                    dependsOn(resolveGreen, resolveBlue)
+                    dependsOn(tasks.resolveGreen, tasks.resolveBlue)
                 }
             }
         """
@@ -2149,7 +2150,7 @@ resultsFile:
 
         and:
         executer.beforeExecute {
-            if (!GradleContextualExecuter.embedded) {
+            if (!IntegrationTestBuildContext.embedded) {
                 executer.withArgument("-D$REUSE_USER_HOME_SERVICES=true")
             }
         }
@@ -2301,7 +2302,6 @@ resultsFile:
         journal.assertExists()
 
         when:
-        executer.noDeprecationChecks()
         run '--stop' // ensure daemon does not cache file access times in memory
         def beforeCleanup = MILLISECONDS.toSeconds(System.currentTimeMillis())
         writeLastTransformationAccessTimeToJournal(getWorkspaceRoot(outputDir1), daysAgo(DEFAULT_MAX_AGE_IN_DAYS_FOR_CREATED_CACHE_ENTRIES + 1))
@@ -2454,8 +2454,8 @@ resultsFile:
                     destinationDirectory = buildDir
                 }
                 artifacts {
-                    compile jar1
-                    compile jar2
+                    compile tasks.jar1
+                    compile tasks.jar2
                 }
             }
         """

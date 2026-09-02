@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GRADLE_DIR="${GRADLE_DIR:-$ROOT_DIR/gradle}"
-NATIVE_PLATFORM_VERSION="${NATIVE_PLATFORM_VERSION:-0.22-milestone-28-custom}"
+NATIVE_PLATFORM_VERSION="${NATIVE_PLATFORM_VERSION:-0.22-milestone-29-custom}"
 NATIVE_PLATFORM_REPO="${NATIVE_PLATFORM_REPO:-$ROOT_DIR/native-platform/build/repo}"
 INIT_SCRIPT="$ROOT_DIR/ci/custom-native-platform.init.gradle"
 VERSION_FILE="$GRADLE_DIR/packaging/distributions-dependencies/build.gradle.kts"
@@ -22,6 +22,9 @@ if [[ ! -f "$INIT_SCRIPT" ]]; then
   echo "Cannot find init script: $INIT_SCRIPT" >&2
   exit 1
 fi
+
+GRADLE_VERSION="$(cat "$GRADLE_DIR/version.txt")"
+distribution_zip="$GRADLE_DIR/packaging/distributions-full/build/distributions/gradle-$GRADLE_VERSION-bin.zip"
 
 required_artifacts=(
   "$NATIVE_PLATFORM_REPO/net/rubygrapefruit/native-platform/$NATIVE_PLATFORM_VERSION/native-platform-$NATIVE_PLATFORM_VERSION.jar"
@@ -67,21 +70,13 @@ GRADLE_CHECKOUT_DIR="$GRADLE_DIR" NATIVE_PLATFORM_REPO="$NATIVE_PLATFORM_REPO" .
   -PfinalRelease=true \
   :distributions-full:binDistributionZip
 
-distribution_zip="$(find "$GRADLE_DIR/packaging/distributions-full/build/distributions" -name 'gradle-*-bin.zip' -type f -print -quit)"
-
-if [[ -z "$distribution_zip" ]]; then
-  echo "Gradle distribution zip was not produced." >&2
+if [[ ! -f "$distribution_zip" ]]; then
+  echo "Gradle distribution zip was not produced: $distribution_zip" >&2
   exit 1
 fi
 
 echo "Built Gradle distribution: $distribution_zip"
 
-if ! unzip -l "$distribution_zip" | grep -F "native-platform-$NATIVE_PLATFORM_VERSION.jar"; then
-  echo "Distribution does not contain native-platform-$NATIVE_PLATFORM_VERSION.jar" >&2
-  exit 1
-fi
-
-if ! unzip -l "$distribution_zip" | grep -F "native-platform-osx-amd64-$NATIVE_PLATFORM_VERSION.jar"; then
-  echo "Distribution does not contain native-platform-osx-amd64-$NATIVE_PLATFORM_VERSION.jar" >&2
-  exit 1
-fi
+GRADLE_DIR="$GRADLE_DIR" NATIVE_PLATFORM_REPO="$NATIVE_PLATFORM_REPO" \
+  NATIVE_PLATFORM_VERSION="$NATIVE_PLATFORM_VERSION" \
+  bash "$ROOT_DIR/ci/verify-gradle-distribution.sh"

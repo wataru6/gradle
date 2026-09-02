@@ -12,6 +12,7 @@ import common.gradleWrapper
 import common.killProcessStep
 import common.performanceTestCommandLine
 import common.removeSubstDirOnWindows
+import common.setArtifactRules
 import common.substDirOnWindows
 import jetbrains.buildServer.configs.kotlin.BuildType
 import jetbrains.buildServer.configs.kotlin.ParameterDisplay
@@ -26,7 +27,7 @@ abstract class AdHocPerformanceScenario(
         id(id)
 
         applyPerformanceTestSettings(os = os, arch = arch, timeout = 420)
-        artifactRules = INDIVIDUAL_PERFORAMCE_TEST_ARTIFACT_RULES
+        setArtifactRules(INDIVIDUAL_PERFORAMCE_TEST_ARTIFACT_RULES)
 
         params {
             text(
@@ -121,7 +122,7 @@ private fun ParametrizedWithType.profilerParam(defaultProfiler: String) {
         allowEmpty = false,
         description =
             "Command line option for the performance test task to enable profiling. " +
-                "For example `async-profiler`, `async-profiler-heap`, `async-profiler-all` or `jfr`. Use `none` for benchmarking only.",
+                "For example `async-profiler`, `async-profiler-heap`, `async-profiler-wall`, `async-profiler-all` or `jfr`. Use `none` for benchmarking only.",
     )
 }
 

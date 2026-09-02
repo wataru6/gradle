@@ -1,4 +1,5 @@
 name: Build custom Gradle macOS amd64
+run-name: Build custom Gradle 9.3.1 (${{ github.ref_name }})
 
 on:
   workflow_dispatch:
@@ -6,7 +7,7 @@ on:
       native_platform_version:
         description: Version to publish from native-platform and consume from Gradle
         required: true
-        default: 0.22-milestone-28-custom
+        default: 0.22-milestone-29-custom
   push:
     branches:
       - master
@@ -40,9 +41,9 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-custom-gradle-${{ hashFiles('native-platform/gradle/wrapper/gradle-wrapper.properties', 'gradle/gradle/wrapper/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-custom-gradle-${{ hashFiles('native-platform/gradle/wrapper/gradle-wrapper.properties', 'gradle/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
-            ${{ runner.os }}-custom-gradle-
+            ${{ runner.os }}-${{ runner.arch }}-custom-gradle-
 
       - name: Set up Java 8 for native-platform
         uses: actions/setup-java@v4
@@ -56,8 +57,9 @@ jobs:
       - name: Upload native-platform Maven repository
         uses: actions/upload-artifact@v4
         with:
-          name: native-platform-macos-amd64-maven-repo
+          name: native-platform-${{ inputs.native_platform_version }}-macos-amd64-maven-repo
           path: native-platform/build/repo
+          if-no-files-found: error
 
       - name: Set up Java 17 for Gradle
         uses: actions/setup-java@v4
@@ -71,5 +73,8 @@ jobs:
       - name: Upload custom Gradle distribution
         uses: actions/upload-artifact@v4
         with:
-          name: custom-gradle-macos-amd64-bin
-          path: gradle/packaging/distributions-full/build/distributions/gradle-*-bin.zip
+          name: custom-gradle-9.3.1-macos-amd64-bin
+          path: |
+            gradle/packaging/distributions-full/build/distributions/gradle-9.3.1-bin.zip
+            gradle/packaging/distributions-full/build/distributions/gradle-9.3.1-bin.zip.sha256
+          if-no-files-found: error

@@ -71,9 +71,11 @@ public class MetadataExtracter {
     }
 
     @Nullable
-    private String getPackageName(File grammarFileFile) {
+    @SuppressWarnings("DefaultCharset")
+    private String getPackageName(File grammarFile) {
         try {
-            return getPackageName(new FileReader(grammarFileFile));
+            // Note: source files can have non-UTF8 encoding. FileReader uses default Charset and also handles invalid characters.
+            return getPackageName(new FileReader(grammarFile));
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read antlr grammar file", e);
         }

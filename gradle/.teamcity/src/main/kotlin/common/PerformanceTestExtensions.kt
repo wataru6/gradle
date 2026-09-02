@@ -27,12 +27,13 @@ fun BuildType.applyPerformanceTestSettings(
     timeout: Int = 30,
 ) {
     applyDefaultSettings(os = os, arch = arch, timeout = timeout)
-    artifactRules =
+    setArtifactRules(
         """
         build/report-*-performance-tests.zip => .
         build/report-*-performance.zip => $HIDDEN_ARTIFACT_DESTINATION
         build/report-*PerformanceTest.zip => $HIDDEN_ARTIFACT_DESTINATION
-        """.trimIndent()
+        """.trimIndent(),
+    )
     detectHangingBuilds = false
     requirements {
         requiresNotEc2Agent()
@@ -59,9 +60,9 @@ fun performanceTestCommandLine(
     "-PtestJavaVendor=$testJavaVendor",
     "-PautoDownloadAndroidStudio=true",
     "-PrunAndroidStudioInHeadlessMode=true",
+    "-Dorg.gradle.java.installations.auto-download=false",
     "-Porg.gradle.java.installations.auto-download=false",
-    os.javaInstallationLocations(arch),
-) +
+) + os.javaInstallationLocations(arch) +
     listOf(
         "-Porg.gradle.performance.branchName" to "%teamcity.build.branch%",
         "-Porg.gradle.performance.db.url" to "%performance.db.url%",

@@ -21,11 +21,12 @@ dependencies {
     implementation(projects.platformBase)
     implementation(projects.platformJvm)
     implementation(projects.pluginsJavaBase)
+    implementation(projects.problemsApi)
     implementation(projects.toolingApi)
     implementation(projects.kotlinDslToolingModels)
     implementation(projects.buildProcessServices)
 
-    implementation(libs.jspecify)
+    compileOnly(libs.jspecify)
 
     testImplementation(testFixtures(projects.kotlinDsl))
     integTestImplementation(testFixtures(projects.toolingApi))

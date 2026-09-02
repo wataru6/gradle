@@ -72,6 +72,7 @@ import org.gradle.internal.event.ScopedListenerManager;
 import org.gradle.internal.exception.ExceptionAnalyser;
 import org.gradle.internal.id.ConfigurationCacheableIdFactory;
 import org.gradle.internal.instantiation.InstantiatorFactory;
+import org.gradle.internal.instantiation.managed.ManagedObjectRegistry;
 import org.gradle.internal.instrumentation.reporting.DefaultMethodInterceptionReportCollector;
 import org.gradle.internal.instrumentation.reporting.ErrorReportingMethodInterceptionReportCollector;
 import org.gradle.internal.instrumentation.reporting.MethodInterceptionReportCollector;
@@ -117,13 +118,17 @@ public class BuildTreeScopeServices implements ServiceRegistrationProvider {
         registration.add(ConfigurationTimeBarrier.class, DefaultConfigurationTimeBarrier.class);
         registration.add(ProblemReporter.class, DeprecationsReporter.class);
         registration.add(ProjectConfigurer.class, TaskPathProjectEvaluator.class);
-        registration.add(FeatureFlags.class, DefaultFeatureFlags.class);
         registration.add(ProblemDiagnosticsFactory.class, DefaultProblemDiagnosticsFactory.class);
         registration.add(ExceptionCollector.class, DefaultExceptionAnalyser.class);
         registration.add(ConfigurationCacheableIdFactory.class);
         registration.add(TaskIdentityFactory.class);
         registration.add(BuildLogicBuildQueue.class, DefaultBuildLogicBuildQueue.class);
         modelServices.applyServicesTo(registration);
+    }
+
+    @Provides
+    ManagedObjectRegistry decorateManagedObjectRegistry(ManagedObjectRegistry parent) {
+        return parent.createChild();
     }
 
     @Provides
@@ -147,6 +152,11 @@ public class BuildTreeScopeServices implements ServiceRegistrationProvider {
     @Provides
     protected InternalOptions createInternalOptions(StartParameter startParameter) {
         return new DefaultInternalOptions(startParameter.getSystemPropertiesArgs());
+    }
+
+    @Provides
+    FeatureFlags createFeatureFlags(ListenerManager listenerManager, StartParameterInternal startParameter) {
+        return new DefaultFeatureFlags(listenerManager, startParameter.getSystemPropertiesArgs());
     }
 
     @Provides

@@ -45,7 +45,9 @@ import java.util.Set;
  */
 public class RegexBackedCSourceParser implements CSourceParser {
     @Override
+    @SuppressWarnings("DefaultCharset")
     public IncludeDirectives parseSource(File sourceFile) {
+        // Note: source files can have non-UTF8 encoding. FileReader uses default Charset and also handles invalid characters.
         try (Reader fileReader = new FileReader(sourceFile)) {
             return parseSource(fileReader);
         } catch (Exception e) {

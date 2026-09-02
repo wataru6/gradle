@@ -18,6 +18,7 @@ package promotion
 
 import common.gradleWrapper
 import common.promotionBuildParameters
+import common.setArtifactRules
 import jetbrains.buildServer.configs.kotlin.BuildSteps
 import jetbrains.buildServer.configs.kotlin.FailureAction
 import jetbrains.buildServer.configs.kotlin.RelativeId
@@ -33,15 +34,16 @@ abstract class BasePublishGradleDistribution(
     cleanCheckout: Boolean = true,
 ) : BasePromotionBuildType(cleanCheckout) {
     init {
-        artifactRules =
+        setArtifactRules(
             """
             **/build/git-checkout/platforms/core-runtime/base-services/build/generated-resources/build-receipt/org/gradle/build-receipt.properties
-            **/build/distributions/*.zip => promote-build-distributions
-            **/build/releases-data-checkout/data/releases.xml
+            **/build/git-checkout/build/distributions/*.zip => promote-build-distributions
             **/build/git-checkout/build/reports/integTest/** => distribution-tests
+            **/build/releases-data-checkout/data/releases.xml
             **/smoke-tests/build/reports/tests/** => post-smoke-tests
             **/build/version-info.properties => version-info.properties
-            """.trimIndent()
+            """.trimIndent(),
+        )
 
         dependencies {
             snapshot(RelativeId("Check_Stage_${this@BasePublishGradleDistribution.triggerName}_Trigger")) {

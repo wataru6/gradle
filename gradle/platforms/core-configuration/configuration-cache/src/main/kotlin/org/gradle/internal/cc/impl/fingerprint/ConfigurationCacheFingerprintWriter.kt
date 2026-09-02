@@ -17,6 +17,7 @@
 package org.gradle.internal.cc.impl.fingerprint
 
 import com.google.common.collect.Sets.newConcurrentHashSet
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet
 import org.gradle.api.Describable
 import org.gradle.api.artifacts.ModuleVersionIdentifier
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
@@ -65,9 +66,9 @@ import org.gradle.internal.configuration.problems.PropertyProblem
 import org.gradle.internal.configuration.problems.PropertyTrace
 import org.gradle.internal.configuration.problems.StructuredMessage
 import org.gradle.internal.configuration.problems.StructuredMessageBuilder
+import org.gradle.internal.execution.InputVisitor
+import org.gradle.internal.execution.InputVisitor.InputFileValueSupplier
 import org.gradle.internal.execution.UnitOfWork
-import org.gradle.internal.execution.UnitOfWork.InputFileValueSupplier
-import org.gradle.internal.execution.UnitOfWork.InputVisitor
 import org.gradle.internal.execution.WorkExecutionTracker
 import org.gradle.internal.execution.WorkInputListener
 import org.gradle.internal.extensions.core.fileSystemEntryType
@@ -584,7 +585,7 @@ class ConfigurationCacheFingerprintWriter(
     private
     fun captureWorkInputs(work: UnitOfWork, relevantInputBehaviors: EnumSet<InputBehavior>) {
         captureWorkInputs(work.displayName) { visitStructure ->
-            work.visitRegularInputs(object : InputVisitor {
+            work.visitMutableInputs(object : InputVisitor {
                 override fun visitInputFileProperty(propertyName: String, behavior: InputBehavior, value: InputFileValueSupplier) {
                     if (relevantInputBehaviors.contains(behavior)) {
                         visitStructure(value.files as FileCollectionInternal)
@@ -991,7 +992,7 @@ class ConfigurationCacheFingerprintWriter(
             writer.write(
                 ProjectSpecificFingerprint.ProjectIdentity(
                     project.buildTreePath,
-                    Path.path(project.buildIdentifier.buildPath),
+                    project.buildPath,
                     project.projectPath
                 )
             )
@@ -1041,7 +1042,9 @@ class ConfigurationCacheFingerprintWriter(
         propertyName: String,
         propertyValue: Any?
     ) {
-        if (propertyTracking.shouldTrackPropertyAccess(propertyScope, propertyName)) {
+        if (!Workarounds.isIgnoredStartParameterProperty(propertyName)
+            && propertyTracking.shouldTrackPropertyAccess(propertyScope, propertyName)
+        ) {
             // TODO:isolated could tracking per project
             buildScopedSink.write(
                 ConfigurationCacheFingerprint.GradleProperty(
@@ -1053,6 +1056,20 @@ class ConfigurationCacheFingerprintWriter(
             reportGradlePropertyInput(propertyScope, propertyName)
         }
     }
+
+    private
+    fun shouldTrackGradlePropertyInput(
+        keysPerScope: ConcurrentHashMap<GradlePropertyScope, MutableSet<String>>,
+        propertyScope: GradlePropertyScope,
+        propertyKey: String
+    ): Boolean = keysPerScope
+        .computeIfAbsent(propertyScope) {
+            ObjectOpenHashSet()
+        }.let { keys ->
+            synchronized(keys) {
+                keys.add(propertyKey)
+            }
+        }
 
     private
     fun reportGradlePropertyInput(
@@ -1098,7 +1115,7 @@ class ConfigurationCacheFingerprintWriter(
         location: PropertyTrace
     ) = PropertyTrace.Project(
         path = when (propertyScope) {
-            is GradlePropertyScope.Project -> propertyScope.projectIdentity.buildTreePath.path
+            is GradlePropertyScope.Project -> propertyScope.projectIdentity.buildTreePath.asString()
             is GradlePropertyScope.Build -> propertyScope.buildIdentifier.buildPath
             else -> error("Unexpected property scope $propertyScope")
         },

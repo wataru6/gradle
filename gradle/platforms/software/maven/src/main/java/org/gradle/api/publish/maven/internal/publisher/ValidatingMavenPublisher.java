@@ -85,7 +85,9 @@ public class ValidatingMavenPublisher implements MavenPublisher {
         }
     }
 
+    @SuppressWarnings("DefaultCharset")
     private Model readModelFromPom(File pomFile) throws IOException, XmlPullParserException {
+        // Note: source files can have non-UTF8 encoding. FileReader uses default Charset and also handles invalid characters.
         try (FileReader reader = new FileReader(pomFile)) {
             return new MavenXpp3Reader().read(reader);
         }
